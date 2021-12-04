@@ -58,6 +58,22 @@ ErrStatus state2 = ERROR;
 
 ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint16_t length);
 
+/* configure USART2 Tx as Debug OUTPUT */
+void USART2_Config(void)
+{
+    /* enable USART and GPIOB clock */
+    rcu_periph_clock_enable(RCU_GPIOB);
+    rcu_periph_clock_enable(RCU_USART2);
+
+    /* configure USART2 Tx as alternate function push-pull */
+    gpio_init(GPIOB, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_10);
+
+    /* USART2 baudrate configuration */
+    usart_baudrate_set(USART2, 115200);
+    usart_transmit_config(USART2, USART_TRANSMIT_ENABLE);
+    usart_enable(USART2);
+}
+
 /*!
     \brief      main function
     \param[in]  none
@@ -66,19 +82,17 @@ ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint16_t length);
 */
 int main(void)
 {
-    gd_eval_led_init(LED2);
-    gd_eval_led_init(LED3);
-    
     /* enable USART and GPIOA clock */
     rcu_periph_clock_enable(RCU_GPIOA);
+
     rcu_periph_clock_enable(RCU_USART0);
     rcu_periph_clock_enable(RCU_USART1);
-    
+
     /* configure USART0 Tx as alternate function push-pull */
-    gpio_init(GPIOA, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_9);    
+    gpio_init(GPIOA, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
     /* configure USART1 Tx as alternate function push-pull */
-    gpio_init(GPIOA, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);   
-    
+    gpio_init(GPIOA, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);
+
     /* USART0 and USART1 baudrate configuration */
     usart_baudrate_set(USART0, 115200);
     usart_baudrate_set(USART1, 115200);
@@ -87,7 +101,7 @@ int main(void)
     usart_halfduplex_enable(USART0);
     /* enable USART1 half duplex mode*/
     usart_halfduplex_enable(USART1);
-    
+
     /* configure USART transmitter */
     usart_transmit_config(USART0, USART_TRANSMIT_ENABLE);
     usart_transmit_config(USART1, USART_TRANSMIT_ENABLE);
@@ -95,10 +109,13 @@ int main(void)
     /* configure USART receiver */
     usart_receive_config(USART0, USART_RECEIVE_ENABLE);
     usart_receive_config(USART1, USART_RECEIVE_ENABLE);
-    
+
     /* enable USART */
     usart_enable(USART0);
     usart_enable(USART1);
+
+    /* enable USART2 for Debug */
+    USART2_Config();
 
     /* clear the USART1 data register */
     usart_data_receive(USART1);
@@ -113,6 +130,16 @@ int main(void)
         /* store the received byte in the receiver_buffer1 */
         receiver_buffer1[rxcount0++] = usart_data_receive(USART1);
     }
+    /* compare the received data with the send ones */
+    state1 = memory_compare(transmitter_buffer0, receiver_buffer1, TRANSMIT_SIZE0);
+    if(SUCCESS == state1){
+        /* if the data transmitted from USART0 and received by USART1 are the same */
+        printf("data transmitted from USART0 and received by USART1 are the same!\r\n");
+    }else{
+        /* if the data transmitted from USART0 and received by USART1 are not the same */
+        printf("data transmitted from USART0 and received by USART1 are the not same!\r\n");
+    }
+
     /* clear the USART0 data register */
     usart_data_receive(USART0);
     /* USART1 transmit and USART0 receive */
@@ -126,24 +153,16 @@ int main(void)
         /* store the received byte in the receiver_buffer0 */
         receiver_buffer0[rxcount1++] = usart_data_receive(USART0);
     }
-  
     /* compare the received data with the send ones */
-    state1 = memory_compare(transmitter_buffer0, receiver_buffer1, TRANSMIT_SIZE0);
     state2 = memory_compare(transmitter_buffer1, receiver_buffer0, TRANSMIT_SIZE1);
-    if(SUCCESS == state1){
-        /* if the data transmitted from USART0 and received by USART1 are the same */
-        gd_eval_led_on(LED2);
-    }else{
-        /* if the data transmitted from USART0 and received by USART1 are not the same */
-        gd_eval_led_off(LED2);
-    }
     if(SUCCESS == state2){
         /* if the data transmitted from USART1 and received by USART0 are the same */
-        gd_eval_led_on(LED3);
+        printf("data transmitted from USART1 and received by USART0 are the same!\r\n");
     }else{
         /* if the data transmitted from USART1 and received by USART0 are not the same */
-        gd_eval_led_off(LED3); 
-    }  
+        printf("data transmitted from USART1 and received by USART0 are the not same!\r\n");
+    }
+
     while(1){
     }
 }
@@ -169,7 +188,7 @@ ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint16_t length)
 /* retarget the C library printf function to the USART */
 int fputc(int ch, FILE *f)
 {
-    usart_data_transmit(USART0, (uint8_t)ch);
-    while(RESET == usart_flag_get(USART0, USART_FLAG_TBE));
+    usart_data_transmit(USART2, (uint8_t)ch);
+    while(RESET == usart_flag_get(USART2, USART_FLAG_TBE));
     return ch;
 }
