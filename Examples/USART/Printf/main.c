@@ -36,7 +36,7 @@ OF SUCH DAMAGE.
 */
 
 #include "gd32f30x.h"
-#include "gd32f303e_eval.h"
+#include "gd32f303c_eval.h"
 #include <stdio.h>
 
 /*!
@@ -66,8 +66,7 @@ int main(void)
     usart_transmit_config(USART0, USART_TRANSMIT_ENABLE);
     usart_enable(USART0);
 
-    printf("hello world\n");
-    printf("a usart transmit test example!");
+    printf("hello world!\r\n");
     while(1);
 }
 

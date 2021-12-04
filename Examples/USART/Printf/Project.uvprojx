@@ -538,9 +538,9 @@
           <GroupName>Utilities</GroupName>
           <Files>
             <File>
-              <FileName>gd32f303e_eval.c</FileName>
+              <FileName>gd32f303c_eval.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\Utilities\gd32f303e_eval.c</FilePath>
+              <FilePath>..\..\..\Utilities\gd32f303c_eval.c</FilePath>
             </File>
           </Files>
         </Group>
