@@ -1,14 +1,12 @@
 /*!
-    \file  ff_gen_drv.h
-    \brief header for ff_gen_drv.c module
+    \file    ff_gen_drv.h
+    \brief   header for ff_gen_drv.c module
 
-    \version 2018-10-08, V1.0.0, firmware for GD32 USBFS&USBHS
+    \version 2021-05-20, V1.0.0, firmware for GD32 USBFS
 */
 
 /*
-    Copyright (c) 2018, GigaDevice Semiconductor Inc.
-
-    All rights reserved.
+    Copyright (c) 2021, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:

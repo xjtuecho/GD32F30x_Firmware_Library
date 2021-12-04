@@ -32,7 +32,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 OF SUCH DAMAGE.
 */
 
-#include "msc_mem.h"
+#include "usbd_msc_mem.h"
 #include "internal_flash_if.h"
 
 uint8_t mem_inquiry_data[] = 

@@ -32,7 +32,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 OF SUCH DAMAGE.
 */
 
-#include "msc_core.h"
+#include "usbd_msc_core.h"
 #include "usbd_hw.h"
 
 usb_dev usb_msc;

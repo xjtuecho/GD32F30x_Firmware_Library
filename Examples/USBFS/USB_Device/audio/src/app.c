@@ -76,6 +76,10 @@ int main(void)
     while(USBD_CONFIGURED != usb_audio.dev.cur_status);
 
 #ifdef USE_USB_AUDIO_MICPHONE
+    for(__IO uint32_t i = 0; i < 2000; i++){
+        for(__IO uint32_t j = 0; j < 10000; j++);
+    }
+
     usbd_ep_send(&usb_audio, AUDIO_IN_EP, (uint8_t*)wavetestdata, MIC_IN_PACKET);
     count_data = MIC_IN_PACKET;
 #endif

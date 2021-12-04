@@ -1026,10 +1026,16 @@
   <group>
     <name>USBD_Class</name>
     <file>
-      <name>$PROJ_DIR$\..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\msc_bbb_scsi.c</name>
+      <name>$PROJ_DIR$\..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\usbd_msc_bbb.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\msc_core.c</name>
+      <name>$PROJ_DIR$\..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\usbd_msc_core.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\usbd_msc_data.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\usbd_msc_scsi.c</name>
     </file>
   </group>
   <group>

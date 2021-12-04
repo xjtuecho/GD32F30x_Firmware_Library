@@ -452,7 +452,7 @@ sd_error_enum sd_block_read(uint32_t *preadbuffer, uint32_t readaddr, uint16_t b
     totalnumber_bytes = 0;
     /* clear all DSM configuration */
     sdio_data_config(0, 0, SDIO_DATABLOCKSIZE_1BYTE);
-    sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOCARD, SDIO_TRANSMODE_BLOCK);
+    sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOCARD);
     sdio_dsm_disable();
     sdio_dma_disable();
     
@@ -463,8 +463,7 @@ sd_error_enum sd_block_read(uint32_t *preadbuffer, uint32_t readaddr, uint16_t b
     }
     
     /* blocksize is fixed in 512B for SDHC card */
-    if (SDIO_HIGH_CAPACITY_SD_CARD == cardtype)
-    {
+    if(SDIO_HIGH_CAPACITY_SD_CARD == cardtype){
         blocksize = 512;
         readaddr /= 512;
     }
@@ -490,9 +489,9 @@ sd_error_enum sd_block_read(uint32_t *preadbuffer, uint32_t readaddr, uint16_t b
     stopcondition = 0;
     totalnumber_bytes = blocksize;
     
-    /* configure SDIO data transmisson */
+    /* configure SDIO data transmission */
     sdio_data_config(SD_DATATIMEOUT, totalnumber_bytes, datablksize);
-    sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOSDIO, SDIO_TRANSMODE_BLOCK);
+    sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOSDIO);
     sdio_dsm_enable();
     
     /* send CMD17(READ_SINGLE_BLOCK) to read a block */
@@ -547,7 +546,7 @@ sd_error_enum sd_block_read(uint32_t *preadbuffer, uint32_t readaddr, uint16_t b
         sdio_interrupt_enable(SDIO_INT_CCRCERR | SDIO_INT_DTTMOUT | SDIO_INT_RXORE | SDIO_INT_DTEND | SDIO_INT_STBITE);
         sdio_dma_enable();
         dma_receive_config(preadbuffer, blocksize);
-        timeout = 10000;
+        timeout = 100000;
         while((RESET == dma_flag_get(DMA1, DMA_CH3, DMA_FLAG_FTF)) && (timeout > 0)){
             timeout--;
             if(0 == timeout){
@@ -585,7 +584,7 @@ sd_error_enum sd_multiblocks_read(uint32_t *preadbuffer, uint32_t readaddr, uint
     totalnumber_bytes = 0;
     /* clear all DSM configuration */
     sdio_data_config(0, 0, SDIO_DATABLOCKSIZE_1BYTE);
-    sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOCARD, SDIO_TRANSMODE_BLOCK);
+    sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOCARD);
     sdio_dsm_disable();
     sdio_dma_disable();
     
@@ -596,8 +595,7 @@ sd_error_enum sd_multiblocks_read(uint32_t *preadbuffer, uint32_t readaddr, uint
     }
     
     /* blocksize is fixed in 512B for SDHC card */
-    if (SDIO_HIGH_CAPACITY_SD_CARD == cardtype)
-    {
+    if(SDIO_HIGH_CAPACITY_SD_CARD == cardtype){
         blocksize = 512;
         readaddr /= 512;
     }
@@ -630,9 +628,9 @@ sd_error_enum sd_multiblocks_read(uint32_t *preadbuffer, uint32_t readaddr, uint
         stopcondition = 1;
         totalnumber_bytes = blocksnumber * blocksize;
         
-        /* configure the SDIO data transmisson */
+        /* configure the SDIO data transmission */
         sdio_data_config(SD_DATATIMEOUT, totalnumber_bytes, datablksize);
-        sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOSDIO, SDIO_TRANSMODE_BLOCK);
+        sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOSDIO);
         sdio_dsm_enable();
         
         /* send CMD18(READ_MULTIPLE_BLOCK) to read multiple blocks */
@@ -702,7 +700,7 @@ sd_error_enum sd_multiblocks_read(uint32_t *preadbuffer, uint32_t readaddr, uint
             sdio_dma_enable();
             dma_receive_config(preadbuffer, totalnumber_bytes);
             
-            timeout = 10000;
+            timeout = 100000;
             while((RESET == dma_flag_get(DMA1, DMA_CH3, DMA_FLAG_FTF)) && (timeout > 0)){
                 timeout--;
                 if(0 == timeout){
@@ -748,7 +746,7 @@ sd_error_enum sd_block_write(uint32_t *pwritebuffer, uint32_t writeaddr, uint16_
     totalnumber_bytes = 0;
     /* clear all DSM configuration */
     sdio_data_config(0, 0, SDIO_DATABLOCKSIZE_1BYTE);
-    sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOCARD, SDIO_TRANSMODE_BLOCK);
+    sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOCARD);
     sdio_dsm_disable();
     sdio_dma_disable();
     
@@ -759,8 +757,7 @@ sd_error_enum sd_block_write(uint32_t *pwritebuffer, uint32_t writeaddr, uint16_
     }
     
     /* blocksize is fixed in 512B for SDHC card */
-    if (SDIO_HIGH_CAPACITY_SD_CARD == cardtype)
-    {
+    if(SDIO_HIGH_CAPACITY_SD_CARD == cardtype){
         blocksize = 512;
         writeaddr /= 512;
     }
@@ -794,8 +791,8 @@ sd_error_enum sd_block_write(uint32_t *pwritebuffer, uint32_t writeaddr, uint16_
     }
     
     response = sdio_response_get(SDIO_RESPONSE0);
-    timeout = 10000;
-    
+    timeout = 100000;
+
     while((0 == (response & SD_R1_READY_FOR_DATA)) && (timeout > 0)){
         /* continue to send CMD13 to polling the state of card until buffer empty or timeout */
         --timeout;
@@ -827,9 +824,9 @@ sd_error_enum sd_block_write(uint32_t *pwritebuffer, uint32_t writeaddr, uint16_
     stopcondition = 0;
     totalnumber_bytes = blocksize;
     
-    /* configure the SDIO data transmisson */
+    /* configure the SDIO data transmission */
     sdio_data_config(SD_DATATIMEOUT, totalnumber_bytes, datablksize);
-    sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOCARD, SDIO_TRANSMODE_BLOCK);
+    sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOCARD);
     sdio_dsm_enable();
     
     if(SD_POLLING_MODE == transmode){
@@ -880,7 +877,7 @@ sd_error_enum sd_block_write(uint32_t *pwritebuffer, uint32_t writeaddr, uint16_
         dma_transfer_config(pwritebuffer, blocksize);
         sdio_dma_enable();
         
-        timeout = 10000;
+        timeout = 100000;
         while((RESET == dma_flag_get(DMA1, DMA_CH3, DMA_FLAG_FTF)) && (timeout > 0)){
             timeout--;
             if(0 == timeout){
@@ -890,7 +887,7 @@ sd_error_enum sd_block_write(uint32_t *pwritebuffer, uint32_t writeaddr, uint16_
         while ((0 == transend) && (SD_OK == transerror)){
         }
 
-        if (SD_OK != transerror){
+        if(SD_OK != transerror){
             return transerror;
         }
     }else{
@@ -936,7 +933,7 @@ sd_error_enum sd_multiblocks_write(uint32_t *pwritebuffer, uint32_t writeaddr, u
     totalnumber_bytes = 0;
     /* clear all DSM configuration */
     sdio_data_config(0, 0, SDIO_DATABLOCKSIZE_1BYTE);
-    sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOCARD, SDIO_TRANSMODE_BLOCK);
+    sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOCARD);
     sdio_dsm_disable();
     sdio_dma_disable();
     
@@ -947,8 +944,7 @@ sd_error_enum sd_multiblocks_write(uint32_t *pwritebuffer, uint32_t writeaddr, u
     }
     
     /* blocksize is fixed in 512B for SDHC card */
-    if (SDIO_HIGH_CAPACITY_SD_CARD == cardtype)
-    {
+    if(SDIO_HIGH_CAPACITY_SD_CARD == cardtype){
         blocksize = 512;
         writeaddr /= 512;
     }
@@ -1022,9 +1018,9 @@ sd_error_enum sd_multiblocks_write(uint32_t *pwritebuffer, uint32_t writeaddr, u
         stopcondition = 1;
         totalnumber_bytes = blocksnumber * blocksize;
         
-        /* configure the SDIO data transmisson */
+        /* configure the SDIO data transmission */
         sdio_data_config(SD_DATATIMEOUT, totalnumber_bytes, datablksize);
-        sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOCARD, SDIO_TRANSMODE_BLOCK);
+        sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOCARD);
         sdio_dsm_enable();
         
         if(SD_POLLING_MODE == transmode){
@@ -1091,7 +1087,7 @@ sd_error_enum sd_multiblocks_write(uint32_t *pwritebuffer, uint32_t writeaddr, u
             sdio_dma_enable();
             dma_transfer_config(pwritebuffer, totalnumber_bytes);
             
-            timeout = 10000;
+            timeout = 100000;
             while((RESET == dma_flag_get(DMA1, DMA_CH3, DMA_FLAG_FTF) && (timeout > 0))){
                 timeout--;
                 if(0 == timeout){
@@ -1148,18 +1144,16 @@ sd_error_enum sd_erase(uint32_t startaddr, uint32_t endaddr)
     clkdiv = (SDIO_CLKCTL & SDIO_CLKCTL_DIV);
     clkdiv += ((SDIO_CLKCTL & SDIO_CLKCTL_DIV8)>>31)*256;
     clkdiv += 2;
-    delay = 168000 / clkdiv;
+    delay = 120000 / clkdiv;
     
     /* check whether the card is locked */
-    if (sdio_response_get(SDIO_RESPONSE0) & SD_CARDSTATE_LOCKED)
-    {
+    if (sdio_response_get(SDIO_RESPONSE0) & SD_CARDSTATE_LOCKED){
         status = SD_LOCK_UNLOCK_FAILED;
         return(status);
     }
     
     /* blocksize is fixed in 512B for SDHC card */
-    if (SDIO_HIGH_CAPACITY_SD_CARD == cardtype)
-    {
+    if (SDIO_HIGH_CAPACITY_SD_CARD == cardtype){
         startaddr /= 512;
         endaddr /= 512;
     }
@@ -1216,7 +1210,7 @@ sd_error_enum sd_erase(uint32_t startaddr, uint32_t endaddr)
 sd_error_enum sd_interrupts_process(void)
 {
     transerror = SD_OK;
-    if(RESET != sdio_interrupt_flag_get(SDIO_INT_DTEND)){
+    if(RESET != sdio_interrupt_flag_get(SDIO_INT_FLAG_DTEND)){
         /* send CMD12 to stop data transfer in multipule blocks operation */
         if(1 == stopcondition){
             transerror = sd_transfer_stop();
@@ -1232,7 +1226,7 @@ sd_error_enum sd_interrupts_process(void)
         return transerror;
     }
     
-    if(RESET != sdio_interrupt_flag_get(SDIO_INT_DTCRCERR)){
+    if(RESET != sdio_interrupt_flag_get(SDIO_INT_FLAG_DTCRCERR)){
         sdio_interrupt_flag_clear(SDIO_INT_DTCRCERR);
         /* disable all the interrupts */
         sdio_interrupt_disable(SDIO_INT_DTCRCERR | SDIO_INT_DTTMOUT | SDIO_INT_DTEND | SDIO_INT_STBITE | 
@@ -1242,7 +1236,7 @@ sd_error_enum sd_interrupts_process(void)
         return transerror;
     }
     
-    if(RESET != sdio_interrupt_flag_get(SDIO_INT_DTTMOUT)){
+    if(RESET != sdio_interrupt_flag_get(SDIO_INT_FLAG_DTTMOUT)){
         sdio_interrupt_flag_clear(SDIO_INT_DTTMOUT);
         /* disable all the interrupts */
         sdio_interrupt_disable(SDIO_INT_DTCRCERR | SDIO_INT_DTTMOUT | SDIO_INT_DTEND | SDIO_INT_STBITE | 
@@ -1252,7 +1246,7 @@ sd_error_enum sd_interrupts_process(void)
         return transerror;
     }
     
-    if(RESET != sdio_interrupt_flag_get(SDIO_INT_STBITE)){
+    if(RESET != sdio_interrupt_flag_get(SDIO_INT_FLAG_STBITE)){
         sdio_interrupt_flag_clear(SDIO_INT_STBITE);
         /* disable all the interrupts */
         sdio_interrupt_disable(SDIO_INT_DTCRCERR | SDIO_INT_DTTMOUT | SDIO_INT_DTEND | SDIO_INT_STBITE | 
@@ -1262,7 +1256,7 @@ sd_error_enum sd_interrupts_process(void)
         return transerror;
     }
     
-    if(RESET != sdio_interrupt_flag_get(SDIO_INT_TXURE)){
+    if(RESET != sdio_interrupt_flag_get(SDIO_INT_FLAG_TXURE)){
         sdio_interrupt_flag_clear(SDIO_INT_TXURE);
         /* disable all the interrupts */
         sdio_interrupt_disable(SDIO_INT_DTCRCERR | SDIO_INT_DTTMOUT | SDIO_INT_DTEND | SDIO_INT_STBITE | 
@@ -1272,7 +1266,7 @@ sd_error_enum sd_interrupts_process(void)
         return transerror;
     }
     
-    if(RESET != sdio_interrupt_flag_get(SDIO_INT_RXORE)){
+    if(RESET != sdio_interrupt_flag_get(SDIO_INT_FLAG_RXORE)){
         sdio_interrupt_flag_clear(SDIO_INT_RXORE);
         /* disable all the interrupts */
         sdio_interrupt_disable(SDIO_INT_DTCRCERR | SDIO_INT_DTTMOUT | SDIO_INT_DTEND | SDIO_INT_STBITE | 
@@ -1367,9 +1361,9 @@ sd_error_enum sd_sdstatus_get(uint32_t *psdstatus)
         return status;
     }
     
-    /* configure the SDIO data transmisson */
+    /* configure the SDIO data transmission */
     sdio_data_config(SD_DATATIMEOUT, (uint32_t)64, SDIO_DATABLOCKSIZE_64BYTES);
-    sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOSDIO, SDIO_TRANSMODE_BLOCK);
+    sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOSDIO);
     sdio_dsm_enable();
     
     /* send ACMD13(SD_STATUS) to get the SD status */
@@ -1454,7 +1448,8 @@ sd_error_enum sd_lock_unlock(uint8_t lockstate)
 {
     sd_error_enum status = SD_OK;
     uint8_t cardstate = 0, tempbyte = 0;
-    uint32_t pwd1 = 0, pwd2 = 0, response = 0, timeout = 0;
+    uint32_t pwd1 = 0, pwd2 = 0, response = 0;
+    __IO uint32_t timeout = 0;
     uint16_t tempccc = 0;
     
     /* get the card command classes from CSD */
@@ -1474,7 +1469,7 @@ sd_error_enum sd_lock_unlock(uint8_t lockstate)
     
     /* clear all DSM configuration */
     sdio_data_config(0, 0, SDIO_DATABLOCKSIZE_1BYTE);
-    sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOCARD, SDIO_TRANSMODE_BLOCK);
+    sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOCARD);
     sdio_dsm_disable();
     sdio_dma_disable();
     
@@ -1499,7 +1494,7 @@ sd_error_enum sd_lock_unlock(uint8_t lockstate)
     }
     
     response = sdio_response_get(SDIO_RESPONSE0);
-    timeout = 10000;
+    timeout = 100000;
     while((0 == (response & SD_R1_READY_FOR_DATA)) && (timeout > 0)){
         /* continue to send CMD13 to polling the state of card until buffer empty or timeout */
         --timeout;
@@ -1530,9 +1525,9 @@ sd_error_enum sd_lock_unlock(uint8_t lockstate)
     
     response = sdio_response_get(SDIO_RESPONSE0);
     
-    /* configure the SDIO data transmisson */
+    /* configure the SDIO data transmission */
     sdio_data_config(SD_DATATIMEOUT, (uint32_t)8, SDIO_DATABLOCKSIZE_8BYTES);
-    sdio_data_transfer_config(SDIO_TRANSDIRECTION_TOCARD, SDIO_TRANSMODE_BLOCK);
+    sdio_data_transfer_config(SDIO_TRANSMODE_BLOCK, SDIO_TRANSDIRECTION_TOCARD);
     sdio_dsm_enable();
     
     /* write password pattern */
@@ -1840,7 +1835,7 @@ sd_error_enum sd_card_information_get(sd_card_info_struct *pcardinfo)
 static sd_error_enum cmdsent_error_check(void)
 {
     sd_error_enum status = SD_OK;
-    uint32_t timeout = 10000;
+    __IO uint32_t timeout = 100000;
     /* check command sent flag */
     while((RESET == sdio_flag_get(SDIO_FLAG_CMDSEND)) && (timeout > 0)){
         --timeout;
@@ -2068,8 +2063,9 @@ static sd_error_enum r6_error_check(uint8_t cmdindex, uint16_t *prca)
 static sd_error_enum r7_error_check(void)
 {
     sd_error_enum status = SD_ERROR;
-    uint32_t reg_status = 0, timeout = 10000;
-    
+    uint32_t reg_status = 0;
+    __IO uint32_t timeout = 100000;
+
     /* store the content of SDIO_STAT */
     reg_status = SDIO_STAT;
     while(!(reg_status & (SDIO_FLAG_CCRCERR | SDIO_FLAG_CMDTMOUT | SDIO_FLAG_CMDRECV)) && (timeout > 0)){
@@ -2247,6 +2243,7 @@ static sd_error_enum sd_scr_get(uint16_t rca, uint32_t *pscr)
     /* send CMD16(SET_BLOCKLEN) to set block length */
     sdio_command_response_config(SD_CMD_SET_BLOCKLEN, (uint32_t)8, SDIO_RESPONSETYPE_SHORT);
     sdio_wait_type_set(SDIO_WAITTYPE_NO);
+    sdio_csm_enable();
     /* check if some error occurs */
     status = r1_error_check(SD_CMD_SET_BLOCKLEN);
     if(SD_OK != status){
@@ -2355,11 +2352,9 @@ static uint32_t sd_datablocksize_get(uint16_t bytesnumber)
 */
 static void gpio_config(void)
 {
-    /* configure the PB.8, PB.9, PC.6, PC.7, PC.8, PC.9, PC.10, PC.11, PC.12 and PD.2 */
-    gpio_init(GPIOB, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_8 | GPIO_PIN_9);
-    gpio_init(GPIOC, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | 
-                                                         GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12);
-    gpio_init(GPIOD, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);  
+    /* configure the SDIO_DAT0(PC8), SDIO_DAT1(PC9), SDIO_DAT2(PC10), SDIO_DAT3(PC11), SDIO_CLK(PC12) and SDIO_CMD(PD2) */
+    gpio_init(GPIOC, GPIO_MODE_AF_PP, GPIO_OSPEED_10MHZ, GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12);
+    gpio_init(GPIOD, GPIO_MODE_AF_PP, GPIO_OSPEED_10MHZ, GPIO_PIN_2);
 }
 
 /*!
@@ -2370,7 +2365,6 @@ static void gpio_config(void)
 */
 static void rcu_config(void)
 {
-    rcu_periph_clock_enable(RCU_GPIOB);
     rcu_periph_clock_enable(RCU_GPIOC);
     rcu_periph_clock_enable(RCU_GPIOD);
     rcu_periph_clock_enable(RCU_AF);

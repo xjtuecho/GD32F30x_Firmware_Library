@@ -599,14 +599,24 @@
           <GroupName>USBD_Class</GroupName>
           <Files>
             <File>
-              <FileName>msc_bbb_scsi.c</FileName>
+              <FileName>usbd_msc_bbb.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\msc_bbb_scsi.c</FilePath>
+              <FilePath>..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\usbd_msc_bbb.c</FilePath>
             </File>
             <File>
-              <FileName>msc_core.c</FileName>
+              <FileName>usbd_msc_core.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\msc_core.c</FilePath>
+              <FilePath>..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\usbd_msc_core.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_msc_data.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\usbd_msc_data.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_msc_scsi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\Firmware\GD32F30x_usbd_library\class\device\msc\Source\usbd_msc_scsi.c</FilePath>
             </File>
           </Files>
         </Group>
