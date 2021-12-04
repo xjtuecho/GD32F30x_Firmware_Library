@@ -37,7 +37,7 @@ OF SUCH DAMAGE.
 
 #include "gd32f30x.h"
 #include <stdio.h>
-#include "gd32f307c_eval.h"
+#include "gd32f303c_eval.h"
 
 #define ARRAYNUM(arr_nanme)      (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
 #define TRANSMIT_SIZE0   (ARRAYNUM(transmitter_buffer0) - 1)
@@ -169,7 +169,7 @@ ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint16_t length)
 /* retarget the C library printf function to the USART */
 int fputc(int ch, FILE *f)
 {
-    usart_data_transmit(EVAL_COM0, (uint8_t)ch);
-    while(RESET == usart_flag_get(EVAL_COM0, USART_FLAG_TBE));
+    usart_data_transmit(USART0, (uint8_t)ch);
+    while(RESET == usart_flag_get(USART0, USART_FLAG_TBE));
     return ch;
 }
