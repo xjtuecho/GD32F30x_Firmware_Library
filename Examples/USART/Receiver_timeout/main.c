@@ -37,13 +37,12 @@ OF SUCH DAMAGE.
 
 #include "gd32f30x.h"
 #include <stdio.h>
-#include "gd32f307c_eval.h"
+#include "gd32f303c_eval.h"
 
 uint8_t rxbuffer[64];
 uint8_t txbuffer[64];
-extern __IO uint8_t txcount; 
-extern __IO uint16_t rxcount; 
-void nvic_config(void);
+__IO uint8_t txcount = 0; 
+__IO uint16_t rxcount = 0; 
 
 /*!
     \brief      main function
@@ -54,9 +53,12 @@ void nvic_config(void);
 int main(void)
 {
     uint32_t i = 0, j = 0;
-    nvic_config();
-    gd_eval_com_init(EVAL_COM0);
-    printf("a usart receive timeout test example!");
+
+    gd_eval_com_init(EVAL_COM1);
+
+    nvic_irq_enable(USART0_IRQn, 0, 1);
+
+    printf("a usart receive timeout test example!\r\n");
     
     while(1){
         if(0 == rxcount){
@@ -67,10 +69,11 @@ int main(void)
             usart_receiver_timeout_enable(USART0);
             usart_receiver_timeout_threshold_config(USART0, 115200*3);
 
-            while(RESET == usart_flag_get(USART0, USART_FLAG_RT));
+            /* wait for USART receive timeout */
+			while(RESET == usart_flag_get(USART0, USART_FLAG_RT)){}
             for(i=0; i<rxcount; i++){ 
                 txbuffer[i] = rxbuffer[j++];
-            } 
+            }
             /* disable the USART receive interrupt and enable the USART transmit interrupt */
             usart_interrupt_disable(USART0, USART_INT_RBNE);
             usart_interrupt_enable(USART0, USART_INT_TBE);
@@ -86,20 +89,32 @@ int main(void)
 }
 
 /*!
-    \brief      configure the nested vectored interrupt controller
+    \brief      this function handles USART RBNE interrupt request and TBE interrupt request
     \param[in]  none
     \param[out] none
     \retval     none
 */
-void nvic_config(void)
+void USART0_IRQHandler(void)
 {
-    nvic_irq_enable(USART0_IRQn, 0, 1);
+    if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)){
+        /* receive data */
+        rxbuffer[rxcount++] = usart_data_receive(USART0);
+    }
+
+    if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_TBE)){
+        /* transmit data */
+        usart_data_transmit(USART0, txbuffer[txcount++]);
+        if(txcount >= rxcount)
+        {
+            usart_interrupt_disable(USART0, USART_INT_TBE);
+        }
+    }
 }
 
 /* retarget the C library printf function to the USART */
 int fputc(int ch, FILE *f)
 {
-    usart_data_transmit(EVAL_COM0, (uint8_t)ch);
-    while (RESET == usart_flag_get(EVAL_COM0, USART_FLAG_TBE));
+    usart_data_transmit(USART0, (uint8_t)ch);
+    while (RESET == usart_flag_get(USART0, USART_FLAG_TBE));
     return ch;
 }
