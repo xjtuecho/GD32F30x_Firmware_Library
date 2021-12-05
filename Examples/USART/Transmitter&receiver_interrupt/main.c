@@ -11,33 +11,33 @@
 /*
     Copyright (c) 2020, GigaDevice Semiconductor Inc.
 
-    Redistribution and use in source and binary forms, with or without modification, 
+    Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-    1. Redistributions of source code must retain the above copyright notice, this 
+    1. Redistributions of source code must retain the above copyright notice, this
        list of conditions and the following disclaimer.
-    2. Redistributions in binary form must reproduce the above copyright notice, 
-       this list of conditions and the following disclaimer in the documentation 
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
        and/or other materials provided with the distribution.
-    3. Neither the name of the copyright holder nor the names of its contributors 
-       may be used to endorse or promote products derived from this software without 
+    3. Neither the name of the copyright holder nor the names of its contributors
+       may be used to endorse or promote products derived from this software without
        specific prior written permission.
 
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
 OF SUCH DAMAGE.
 */
 
 #include "gd32f30x.h"
 #include <stdio.h>
-#include "gd32f307c_eval.h"
+#include "gd32f303c_eval.h"
 
 #define ARRAYNUM(arr_nanme)      (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
 #define TRANSMIT_SIZE            (ARRAYNUM(txbuffer) - 1)
@@ -46,8 +46,8 @@ uint8_t txbuffer[] = "\n\rUSART interrupt test\n\r";
 uint8_t rxbuffer[32];
 uint8_t tx_size = TRANSMIT_SIZE;
 uint8_t rx_size = 32;
-__IO uint8_t txcount = 0; 
-__IO uint16_t rxcount = 0; 
+__IO uint8_t txcount = 0;
+__IO uint16_t rxcount = 0;
 
 /*!
     \brief      main function
@@ -60,17 +60,17 @@ int main(void)
     /* USART interrupt configuration */
     nvic_irq_enable(USART0_IRQn, 0, 0);
     /* configure COM1 */
-    gd_eval_com_init(EVAL_COM0);
-    /* enable USART TBE interrupt */  
+    gd_eval_com_init(EVAL_COM1);
+    /* enable USART TBE interrupt */
     usart_interrupt_enable(USART0, USART_INT_TBE);
-    
+
     /* wait until USART send the transmitter_buffer */
     while(txcount < tx_size);
-    
+
     while(RESET == usart_flag_get(USART0, USART_FLAG_TC));
-    
+
     usart_interrupt_enable(USART0, USART_INT_RBNE);
-    
+
     /* wait until USART receive the receiver_buffer */
     while(rxcount < rx_size);
     if(rxcount == rx_size)
@@ -78,10 +78,34 @@ int main(void)
     while (1);
 }
 
+/*!
+    \brief      this function handles USART RBNE interrupt request and TBE interrupt request
+    \param[in]  none
+    \param[out] none
+    \retval     none
+*/
+void USART0_IRQHandler(void)
+{
+    if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)){
+        /* receive data */
+        rxbuffer[rxcount++] = usart_data_receive(USART0);
+        if(rxcount == rx_size){
+            usart_interrupt_disable(USART0, USART_INT_RBNE);
+        }
+    }
+    if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_TBE)){
+        /* transmit data */
+        usart_data_transmit(USART0, txbuffer[txcount++]);
+        if(txcount == tx_size){
+            usart_interrupt_disable(USART0, USART_INT_TBE);
+        }
+    }
+}
+
 /* retarget the C library printf function to the USART */
 int fputc(int ch, FILE *f)
 {
-    usart_data_transmit(EVAL_COM0, (uint8_t)ch);
-    while (RESET == usart_flag_get(EVAL_COM0, USART_FLAG_TBE));
+    usart_data_transmit(USART0, (uint8_t)ch);
+    while (RESET == usart_flag_get(USART0, USART_FLAG_TBE));
     return ch;
 }
