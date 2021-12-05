@@ -58,21 +58,6 @@ ErrStatus state2 = ERROR;
 
 ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint16_t length);
 
-/* configure USART2 Tx as Debug OUTPUT */
-void USART0_Config(void)
-{
-    /* enable USART and GPIOB clock */
-    rcu_periph_clock_enable(RCU_GPIOB);
-    rcu_periph_clock_enable(RCU_USART2);
-
-
-    /* USART2 baudrate configuration */
-    usart_baudrate_set(USART0, 115200);
-    usart_transmit_config(USART0, USART_TRANSMIT_ENABLE);
-    usart_transmit_config(USART0, USART_RECEIVE_ENABLE);
-    usart_enable(USART0);
-}
-
 /*!
     \brief      main function
     \param[in]  none
