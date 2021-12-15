@@ -173,8 +173,8 @@ int fputc(int ch, FILE *f)
 }
 
 const struct syscall_item syscall_table[] = {
-	{"test",    "test command.\r\n", syscall_test},
-	{"help",    "help Info.\r\n", syscall_help},
-	{"version", "display version Info.\r\n", syscall_version},
+    {"test",    "test command.\r\n", syscall_test},
+    {"help",    "help Info.\r\n", syscall_help},
+    {"version", "display version Info.\r\n", syscall_version},
 };
 const uint8_t syscall_num = sizeof(syscall_table)/sizeof(syscall_table[0]);
