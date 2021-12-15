@@ -42,50 +42,22 @@ OF SUCH DAMAGE.
 /* enter the second interruption,set the second interrupt flag to 1 */
 __IO uint32_t timedisplay;
 
-/*!
-    \brief      configure the RTC
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
 void rtc_configuration(void)
 {
-    /* enable PMU and BKPI clocks */
     rcu_periph_clock_enable(RCU_BKPI);
     rcu_periph_clock_enable(RCU_PMU);
-    /* allow access to BKP domain */
     pmu_backup_write_enable();
-
-    /* reset backup domain */
     bkp_deinit();
-
-    /* enable LXTAL */
     rcu_osci_on(RCU_LXTAL);
-    /* wait till LXTAL is ready */
     rcu_osci_stab_wait(RCU_LXTAL);
-    
-    /* select RCU_LXTAL as RTC clock source */
     rcu_rtc_clock_config(RCU_RTCSRC_LXTAL);
-
-    /* enable RTC Clock */
     rcu_periph_clock_enable(RCU_RTC);
-
-    /* wait for RTC registers synchronization */
     rtc_register_sync_wait();
-
-    /* wait until last write operation on RTC registers has finished */
     rtc_lwoff_wait();
-
-    /* enable the RTC second interrupt*/
     rtc_interrupt_enable(RTC_INT_SECOND);
-
-    /* wait until last write operation on RTC registers has finished */
     rtc_lwoff_wait();
-
     /* set RTC prescaler: set RTC period to 1s */
     rtc_prescaler_set(32767);
-
-    /* wait until last write operation on RTC registers has finished */
     rtc_lwoff_wait();
 }
 
@@ -152,72 +124,16 @@ uint32_t time_regulate(void)
     return((tmp_hh*3600 + tmp_mm*60 + tmp_ss));
 }
 
-/*!
-    \brief      adjust time 
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
-void time_adjust(void)
-{
-    /* wait until last write operation on RTC registers has finished */
-    rtc_lwoff_wait();
-    /* change the current time */
-    rtc_counter_set(time_regulate());
-    /* wait until last write operation on RTC registers has finished */
-    rtc_lwoff_wait();
-}
-
-/*!
-    \brief      display the current time 
-    \param[in]  timeVar: RTC counter value
-    \param[out] none
-    \retval     none
-*/
 void time_display(uint32_t timevar)
 {
-    uint32_t thh = 0, tmm = 0, tss = 0;
-
-    /* compute  hours */
-    thh = timevar / 3600;
-    /* compute minutes */
-    tmm = (timevar % 3600) / 60;
-    /* compute seconds */
-    tss = (timevar % 3600) % 60;
-
-    printf(" Time: %0.2d:%0.2d:%0.2d\r\n", thh, tmm, tss);
+    printf(" Time: %0.2d:%0.2d:%0.2d\r\n",
+         timevar / 3600,
+         (timevar % 3600) / 60, 
+         (timevar % 3600) % 60);
 }
 
-/*!
-    \brief      show the current time (HH:MM:SS) on the Hyperterminal
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
-void time_show(void)
-{
-    printf("\n\r");
-
-    /* infinite loop */
-    while (1){
-        /* if 1s has paased */
-        if (timedisplay == 1){
-            /* display current time */
-            time_display(rtc_counter_get());
-            timedisplay = 0;
-        }
-    }
-}
-
-/*!
-    \brief      main function
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
 int main(void)
 {
-    /* COM1 config */
     gd_eval_com_init(EVAL_COM1);
 
     nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
@@ -231,13 +147,13 @@ int main(void)
         printf("\r\nThis is a RTC demo!\r\n");
         printf("\r\n\n RTC not yet configured....");
 
-        /* RTC configuration */
         rtc_configuration();
 
         printf("\r\n RTC configured....");
 
-        /* adjust time by values entred by the user on the hyperterminal */
-        time_adjust();
+        rtc_lwoff_wait();
+        rtc_counter_set(time_regulate());
+        rtc_lwoff_wait();
 
         bkp_write_data(BKP_DATA_0, 0xA5A5);
     }else{
@@ -249,18 +165,13 @@ int main(void)
             printf("\r\n\n External Reset occurred....");
         }
 
-        /* allow access to BKP domain */
         rcu_periph_clock_enable(RCU_PMU);
         pmu_backup_write_enable();
 
         printf("\r\n No need to configure RTC....");
-        /* wait for RTC registers synchronization */
         rtc_register_sync_wait();
 
-        /* enable the RTC second */
         rtc_interrupt_enable(RTC_INT_SECOND);
-
-        /* wait until last write operation on RTC registers has finished */
         rtc_lwoff_wait();
     }
 
@@ -278,37 +189,26 @@ int main(void)
     bkp_rtc_calibration_output_enable();
 #endif
 
-    /* clear reset flags */
     rcu_all_reset_flag_clear();
-
-    /* display time in infinite loop */
-    time_show();
-
+    printf("\n\r");
     while (1){
+        /* if 1s has paased, display current time*/
+        if (timedisplay == 1){
+            time_display(rtc_counter_get());
+            timedisplay = 0;
+        }
     }
 }
 
-/*!
-    \brief      this function handles RTC global interrupt request
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
 void RTC_IRQHandler(void)
 {
     if (rtc_flag_get(RTC_FLAG_SECOND) != RESET){
-        /* clear the RTC second interrupt flag*/
         rtc_flag_clear(RTC_FLAG_SECOND);
-
-        /* enable time update */
         timedisplay = 1;
-
-        /* wait until last write operation on RTC registers has finished */
         rtc_lwoff_wait();
         /* reset RTC counter when time is 23:59:59 */
         if (rtc_counter_get() == 24*60*60){
             rtc_counter_set(0x0);
-            /* wait until last write operation on RTC registers has finished */
             rtc_lwoff_wait();
         }
     }
