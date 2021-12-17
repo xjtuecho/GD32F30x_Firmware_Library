@@ -111,28 +111,6 @@ void calc_calendar(uint32_t rtc, calendar_t *c)
     c->sec  = tim % 3600 % 60;
 }
 
-/* enter the second interruption,set the second interrupt flag to 1 */
-__IO uint32_t timedisplay;
-
-void rtc_configuration(void)
-{
-    rcu_periph_clock_enable(RCU_BKPI);
-    rcu_periph_clock_enable(RCU_PMU);
-    pmu_backup_write_enable();
-    bkp_deinit();
-    rcu_osci_on(RCU_LXTAL);
-    rcu_osci_stab_wait(RCU_LXTAL);
-    rcu_rtc_clock_config(RCU_RTCSRC_LXTAL);
-    rcu_periph_clock_enable(RCU_RTC);
-    rtc_register_sync_wait();
-    rtc_lwoff_wait();
-    rtc_interrupt_enable(RTC_INT_SECOND);
-    rtc_lwoff_wait();
-    /* set RTC prescaler: set RTC period to 1s */
-    rtc_prescaler_set(32767);
-    rtc_lwoff_wait();
-}
-
 /*!
     \brief      get numeric values from the hyperterminal
     \param[in]  value: input value from the hyperterminal
@@ -225,6 +203,28 @@ void time_display(uint32_t timevar)
     printf(" %04d-%d-%d %02d:%02d:%02d\r",
         t.year, t.mon, t.mday,
         t.hour, t.min, t.sec);
+}
+
+/* enter the second interruption,set the second interrupt flag to 1 */
+__IO uint32_t timedisplay;
+
+void rtc_configuration(void)
+{
+    rcu_periph_clock_enable(RCU_BKPI);
+    rcu_periph_clock_enable(RCU_PMU);
+    pmu_backup_write_enable();
+    bkp_deinit();
+    rcu_osci_on(RCU_LXTAL);
+    rcu_osci_stab_wait(RCU_LXTAL);
+    rcu_rtc_clock_config(RCU_RTCSRC_LXTAL);
+    rcu_periph_clock_enable(RCU_RTC);
+    rtc_register_sync_wait();
+    rtc_lwoff_wait();
+    rtc_interrupt_enable(RTC_INT_SECOND);
+    rtc_lwoff_wait();
+    /* set RTC prescaler: set RTC period to 1s */
+    rtc_prescaler_set(32767);
+    rtc_lwoff_wait();
 }
 
 int main(void)
