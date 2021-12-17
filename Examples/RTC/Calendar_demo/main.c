@@ -1,6 +1,6 @@
 /*!
     \file    main.c
-    \brief   RTC calendar 
+    \brief   RTC calendar
 
     \version 2017-02-10, V1.0.0, firmware for GD32F30x
     \version 2018-10-10, V1.1.0, firmware for GD32F30x
@@ -11,33 +11,105 @@
 /*
     Copyright (c) 2020, GigaDevice Semiconductor Inc.
 
-    Redistribution and use in source and binary forms, with or without modification, 
+    Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-    1. Redistributions of source code must retain the above copyright notice, this 
+    1. Redistributions of source code must retain the above copyright notice, this
        list of conditions and the following disclaimer.
-    2. Redistributions in binary form must reproduce the above copyright notice, 
-       this list of conditions and the following disclaimer in the documentation 
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
        and/or other materials provided with the distribution.
-    3. Neither the name of the copyright holder nor the names of its contributors 
-       may be used to endorse or promote products derived from this software without 
+    3. Neither the name of the copyright holder nor the names of its contributors
+       may be used to endorse or promote products derived from this software without
        specific prior written permission.
 
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
 OF SUCH DAMAGE.
 */
 
 #include "gd32f30x.h"
 #include "gd32f303c_eval.h"
 #include <stdio.h>
+
+typedef struct {
+    uint16_t year;  /* years */
+    uint8_t  mon;   /* months 1 to 12 */
+    uint8_t  mday;  /* day of the month, 1 to 31 */
+    uint8_t  hour;  /* hours since midnight, 0 to 23 */
+    uint8_t  min;   /* minutes after the hour, 0 to 59 */
+    uint8_t  sec;   /* seconds after the minute, 0 to 59 */
+} calendar_t;
+
+const uint8_t month_table[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+
+uint8_t is_leap_year(uint16_t year)
+{
+    return (year % 400 == 0 || year % 4 == 0 && year % 100 != 0) ? 1 : 0;
+}
+
+uint32_t calc_rtc_counter(const calendar_t *c)
+{
+    uint32_t t, cnt = 0;
+
+    for(t=1970; t<c->year; t++)
+        cnt += is_leap_year(t) ? 86400*366 : 86400*365;
+    for(t=0; t<c->mon-1; t++){
+        cnt += month_table[t] * 86400;
+        if(is_leap_year(c->year) && t == 1)
+            cnt += 86400;
+    }
+    cnt += (c->mday-1) * 86400 + c->hour * 3600 + c->min * 60 + c->sec;
+
+    return cnt;
+}
+
+void calc_calendar(uint32_t rtc, calendar_t *c)
+{
+    uint32_t t = 1970, day = rtc / 86400, tim = rtc % 86400;
+    while(day >= 365){
+        if(is_leap_year(t)) {
+            if(day >= 366) {
+                day -= 366;
+                t++;
+            } else {
+                t++;
+                break;
+            }
+        } else {
+            day -= 365;
+            t++;
+        }
+    }
+    c->year = t;
+    t = 0;
+    while(day >= 28){
+        if(is_leap_year(c->year) && 1 == 0){
+            if(day >= 29)
+                day -= 29;
+            else
+                break;
+        } else {
+            if(day >= month_table[t])
+                day -= month_table[t];
+            else
+                break;
+        }
+        t++;
+    }
+    c->mon  = t + 1;
+    c->mday = day + 1;
+    c->hour = tim / 3600;
+    c->min  = tim % 3600 / 60;
+    c->sec  = tim % 3600 % 60;
+}
 
 /* enter the second interruption,set the second interrupt flag to 1 */
 __IO uint32_t timedisplay;
@@ -100,36 +172,59 @@ uint8_t usart_scanf(uint32_t value)
 */
 uint32_t time_regulate(void)
 {
-    uint32_t tmp_hh = 0xFF, tmp_mm = 0xFF, tmp_ss = 0xFF;
+    calendar_t t = { .year=0xFFFF, .mon=0xFF, .mday = 0xFF,
+        .hour = 0xFF, .min = 0xFF, .sec=0xFF };
 
-    printf("\r\n==============Time Settings=====================================");
-    printf("\r\n  Please Set Hours");
+    printf("\r\n==============Calendar Settings=====================================");
 
-    while (tmp_hh == 0xFF){
-        tmp_hh = usart_scanf(23);
+    printf("\r\n  Please Set Year(0-99, such as:21 for 2021)");
+    while (t.year == 0xFFFF){
+        t.year = usart_scanf(99);
     }
-    printf(":  %d", tmp_hh);
-    printf("\r\n  Please Set Minutes");
-    while (tmp_mm == 0xFF){
-        tmp_mm = usart_scanf(59);
+    t.year += 2000;
+    printf(":  %d", t.year);
+
+    printf("\r\n  Please Set Month(1-12)");
+    while (t.mon == 0xFF){
+        t.mon = usart_scanf(12);
     }
-    printf(":  %d", tmp_mm);
-    printf("\r\n  Please Set Seconds");
-    while (tmp_ss == 0xFF){
-        tmp_ss = usart_scanf(59);
+    printf(":  %d", t.mon);
+
+    printf("\r\n  Please Set Day(1-31)");
+    while (t.mday == 0xFF){
+        t.mday = usart_scanf(31);
     }
-    printf(":  %d", tmp_ss);
+    printf(":  %d", t.mday);
+
+    printf("\r\n  Please Set Hour(0-23)");
+    while (t.hour == 0xFF){
+        t.hour = usart_scanf(23);
+    }
+    printf(":  %d", t.hour);
+
+    printf("\r\n  Please Set Minute(0-59)");
+    while (t.min == 0xFF){
+        t.min = usart_scanf(59);
+    }
+    printf(":  %d", t.min);
+
+    printf("\r\n  Please Set Second(0-59)");
+    while (t.sec == 0xFF){
+        t.sec = usart_scanf(59);
+    }
+    printf(":  %d", t.sec);
 
     /* return the value  store in RTC counter register */
-    return((tmp_hh*3600 + tmp_mm*60 + tmp_ss));
+    return calc_rtc_counter(&t);
 }
 
 void time_display(uint32_t timevar)
 {
-    printf(" Time: %0.2d:%0.2d:%0.2d\r\n",
-         timevar / 3600,
-         (timevar % 3600) / 60, 
-         (timevar % 3600) % 60);
+    calendar_t t;
+    calc_calendar(timevar, &t);
+    printf(" %04d-%d-%d %02d:%02d:%02d\r",
+        t.year, t.mon, t.mday,
+        t.hour, t.min, t.sec);
 }
 
 int main(void)
@@ -138,7 +233,7 @@ int main(void)
 
     nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
     nvic_irq_enable(RTC_IRQn,1,0);
-	
+
     printf( "\r\n This is a RTC demo...... \r\n" );
 
     if (bkp_read_data(BKP_DATA_0) != 0xA5A5){
@@ -206,11 +301,6 @@ void RTC_IRQHandler(void)
         rtc_flag_clear(RTC_FLAG_SECOND);
         timedisplay = 1;
         rtc_lwoff_wait();
-        /* reset RTC counter when time is 23:59:59 */
-        if (rtc_counter_get() == 24*60*60){
-            rtc_counter_set(0x0);
-            rtc_lwoff_wait();
-        }
     }
 }
 
