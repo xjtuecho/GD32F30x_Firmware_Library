@@ -37,7 +37,7 @@ OF SUCH DAMAGE.
 
 #include "gd32f30x.h"
 #include <stdio.h>
-#include "gd32f307c_eval.h"
+#include "gd32f303c_eval.h"
 
 /* select CAN */
 #define CAN0_USED
@@ -68,7 +68,7 @@ int main(void)
 {
     /* enable CAN clock */
     rcu_periph_clock_enable(RCU_CAN0);
-    rcu_periph_clock_enable(RCU_CAN1);
+//  rcu_periph_clock_enable(RCU_CAN1);
     
     /* configure NVIC */
     nvic_config();
@@ -271,7 +271,7 @@ void nvic_config(void)
     /* configure CAN0 NVIC */
     nvic_irq_enable(CAN0_RX1_IRQn,0,0);
     /* configure CAN1 NVIC */
-    nvic_irq_enable(CAN1_RX1_IRQn,0,0);
+//  nvic_irq_enable(CAN1_RX1_IRQn,0,0);
 }
 
 /*!
