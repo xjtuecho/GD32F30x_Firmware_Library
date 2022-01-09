@@ -61,10 +61,12 @@ void rtc_configuration(void)
 void setup_rtc_alarm(void)
 {
     uint32_t cnt = rtc_counter_get();
-    printf("Setup RTC Alarm, time=%us\r\n", cnt);
+    printf("RTC_CNT=%us ", cnt);
+	cnt += 10;
     rtc_lwoff_wait();
-    rtc_alarm_config(10 - 1 + cnt);
+    rtc_alarm_config(cnt - 1);
     rtc_lwoff_wait();
+    printf("Set RTC_ALARM=%us\r\n", cnt);
 }
 
 int main(void)
@@ -86,7 +88,7 @@ int main(void)
         printf("Goto DeepSleep...\r\n ");
         pmu_to_deepsleepmode(PMU_LDO_NORMAL, WFI_CMD);
         rtc_register_sync_wait();
-        printf("Wakeup from DeepSleep, time=%us\r\n\r\n", rtc_counter_get());
+        printf("Wakeup from DeepSleep, RTC_CNT=%us\r\n\r\n", rtc_counter_get());
     }
 }
 
