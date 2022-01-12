@@ -60,7 +60,9 @@ void rtc_configuration(void)
 
 void setup_rtc_alarm(void)
 {
-    uint32_t cnt = rtc_counter_get();
+    uint32_t cnt = 0;
+    rtc_register_sync_wait();
+    cnt = rtc_counter_get();
     printf("RTC_CNT=%us ", cnt);
     cnt += 10;
     rtc_lwoff_wait();
