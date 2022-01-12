@@ -37,6 +37,7 @@ OF SUCH DAMAGE.
 
 #include "gd32f30x.h"
 #include "gd32f303c_eval.h"
+#include <stdio.h>
 
 uint32_t sysTickTimer = 0;
 
@@ -58,6 +59,22 @@ void systick_config(void)
     NVIC_SetPriority(SysTick_IRQn, 0x00U);
 }
 
+
+void fwdgw_configuration(void)
+{
+    /* enable IRC40K */
+    rcu_osci_on(RCU_IRC40K);
+    /* wait till IRC40K is ready */
+    while(SUCCESS != rcu_osci_stab_wait(RCU_IRC40K)){
+    }
+    /* 40e3/128*5 = 1563 */
+    fwdgt_config(1563, FWDGT_PSC_DIV128);
+    /* After 10 seconds to generate a reset */
+    fwdgt_enable();
+    /* KickDog */
+    fwdgt_counter_reload();
+}
+
 //  delays number of tick Systicks (happens every 1 ms)
 void Delay(uint32_t dlyTicks)
 {
@@ -66,7 +83,7 @@ void Delay(uint32_t dlyTicks)
 	curTicks = sysTickTimer;
 	while ((sysTickTimer - curTicks) < dlyTicks)
 	{
-	//	__NOP();
+		__NOP();
 	}
 }
 
@@ -78,75 +95,53 @@ void Delay(uint32_t dlyTicks)
 */
 int main(void)
 {
-    /* enable IRC40K */
-    rcu_osci_on(RCU_IRC40K);
-
-    /* wait till IRC40K is ready */
-    while(SUCCESS != rcu_osci_stab_wait(RCU_IRC40K)){
-    }
+    gd_eval_com_init(EVAL_COM1);
+    usart_interrupt_enable(EVAL_COM1, USART_INT_RBNE);
+    nvic_priority_group_set(NVIC_PRIGROUP_PRE2_SUB2);
+    nvic_irq_enable(USART0_IRQn, 0, 0);
 
     /* config systick  */
     systick_config();
-
-    /* configure LED  */
-    gd_eval_led_init(LED2);
-    gd_eval_led_init(LED3);
-
-    /* configure the Tamper key which is used to reload FWDGT  */
-    gd_eval_key_init(KEY_TAMPER,KEY_MODE_EXTI);
+    fwdgw_configuration();
 
     Delay(500);
 
-    /* confiure FWDGT counter clock: 40KHz(IRC40K) / 64 = 0.625 KHz */
-    fwdgt_config(2*500,FWDGT_PSC_DIV64);
-
-    /* After 1.6 seconds to generate a reset */
-    fwdgt_enable();
-
     /* check if the system has resumed from FWDGT reset */
     if (RESET != rcu_flag_get(RCU_FLAG_FWDGTRST)){
-        /* turn on LED3 */
-        gd_eval_led_on(LED3);
-        /* clear the FWDGT reset flag */
         rcu_all_reset_flag_clear();
-
-        while(1){
-        }
-
-    }else{
-        /* turn on LED2 */
-        gd_eval_led_on(LED2);
+        printf("last reset by FWDGT...\r\n");
+    } else {
+        printf("This as a FWDGT Demo, input some character to kickdog...\r\n");
     }
 
     while (1){
     }
 }
 
-/*!
-    \brief      this function handles SysTick exception
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
+void USART0_IRQHandler(void)
+{
+    uint16_t dat = 0;
+
+    if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)){
+        /* KickDog */
+        fwdgt_counter_reload();
+        /* echo the character received */
+        dat = usart_data_receive(USART0);
+        usart_data_transmit(USART0, dat);
+        while(RESET == usart_flag_get(USART0, USART_FLAG_TBE)){
+        }
+    }
+}
+
 void SysTick_Handler(void)
 {
     sysTickTimer++;
 }
 
-/*!
-    \brief      this function handles EXTI10_15 interrupt request
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
-void EXTI10_15_IRQHandler(void)
+/* retarget the C library printf function to the USART */
+int fputc(int ch, FILE *f)
 {
-    /* make sure whether the tamper key EXTI Line is interrupted */
-    if(RESET != exti_interrupt_flag_get(EXTI_13)){
-        /* reload FWDGT counter */
-        fwdgt_counter_reload();
-    }
-
-    /* clear the interrupt flag bit */
-    exti_interrupt_flag_clear(EXTI_13);
+    usart_data_transmit(USART0, (uint8_t)ch);
+    while(RESET == usart_flag_get(USART0, USART_FLAG_TBE));
+    return ch;
 }
