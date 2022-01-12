@@ -39,27 +39,6 @@ OF SUCH DAMAGE.
 #include "gd32f303c_eval.h"
 #include <stdio.h>
 
-uint32_t sysTickTimer = 0;
-
-/*!
-    \brief      configure systick
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
-void systick_config(void)
-{
-    /* setup systick timer for 1000Hz interrupts */
-    if (SysTick_Config(SystemCoreClock / 1000U)){
-        /* capture error */
-        while (1){
-        }
-    }
-    /* configure the systick handler priority */
-    NVIC_SetPriority(SysTick_IRQn, 0x00U);
-}
-
-
 void fwdgw_configuration(void)
 {
     /* enable IRC40K */
@@ -75,18 +54,6 @@ void fwdgw_configuration(void)
     fwdgt_counter_reload();
 }
 
-//  delays number of tick Systicks (happens every 1 ms)
-void Delay(uint32_t dlyTicks)
-{
-	uint32_t curTicks;
-
-	curTicks = sysTickTimer;
-	while ((sysTickTimer - curTicks) < dlyTicks)
-	{
-		__NOP();
-	}
-}
-
 /*!
     \brief      main function
     \param[in]  none
@@ -99,12 +66,7 @@ int main(void)
     usart_interrupt_enable(EVAL_COM1, USART_INT_RBNE);
     nvic_priority_group_set(NVIC_PRIGROUP_PRE2_SUB2);
     nvic_irq_enable(USART0_IRQn, 0, 0);
-
-    /* config systick  */
-    systick_config();
     fwdgw_configuration();
-
-    Delay(500);
 
     /* check if the system has resumed from FWDGT reset */
     if (RESET != rcu_flag_get(RCU_FLAG_FWDGTRST)){
@@ -131,11 +93,6 @@ void USART0_IRQHandler(void)
         while(RESET == usart_flag_get(USART0, USART_FLAG_TBE)){
         }
     }
-}
-
-void SysTick_Handler(void)
-{
-    sysTickTimer++;
 }
 
 /* retarget the C library printf function to the USART */
