@@ -36,8 +36,30 @@ OF SUCH DAMAGE.
 */
 
 #include "gd32f30x.h"
-#include "systick.h"
-#include "gd32f307c_eval.h"
+#include "gd32f303c_eval.h"
+#include <stdio.h>
+
+volatile uint32_t sysTickTimer = 0;
+
+// delays number of tick Systicks
+void Delay(uint32_t dlyTicks)
+{
+    uint32_t curTicks;
+    curTicks = sysTickTimer;
+    while (sysTickTimer - curTicks < dlyTicks) {
+    }
+}
+
+void systick_config(void)
+{
+    /* configure systick */
+    if (SysTick_Config(SystemCoreClock / 1000U)){
+        while (1){
+        }
+    }
+    /* configure the systick handler priority */
+    NVIC_SetPriority(SysTick_IRQn, 0x00U);
+}
 
 /*!
     \brief      main function
@@ -47,28 +69,18 @@ OF SUCH DAMAGE.
 */
 int main(void)
 {
-    /* configure systick */
-    systick_config();
-
-    /* configure LED2 and LED3 */
-    gd_eval_led_init(LED2);
-    gd_eval_led_init(LED3);
-    
-    /* turn off LED2 and LED3 */
-    gd_eval_led_off(LED2);
-    gd_eval_led_off(LED3);
-    
-    /* delay */
-    delay_1ms(150);
+    gd_eval_com_init(EVAL_COM1);
+	systick_config();
+    Delay(150);
 
     /* check if the system has resumed from WWDGT reset */
     if(RESET != rcu_flag_get(RCU_FLAG_WWDGTRST)){
         /* WWDGTRST flag set */
-        gd_eval_led_on(LED2);
+        printf("last reset by WWDGT...\r\n");
         /* clear the WWDGTRST flag */
         rcu_all_reset_flag_clear();
-        
-        while(1);
+    } else {
+        printf("This as a WWDGT Demo...\r\n");
     }
 
     /* enable WWDGT clock */
@@ -84,11 +96,28 @@ int main(void)
     wwdgt_enable();
 
     while(1){
-        /* toggle LED3 */
-        gd_eval_led_toggle(LED3);
         /* insert 26 ms delay */
-        delay_1ms(26);
+        Delay(26);
         /* update WWDGT counter */
         wwdgt_counter_update(127);
     }
+}
+
+/*!
+    \brief      this function handles SysTick exception
+    \param[in]  none
+    \param[out] none
+    \retval     none
+*/
+void SysTick_Handler(void)
+{
+    sysTickTimer++;
+}
+
+/* retarget the C library printf function to the USART */
+int fputc(int ch, FILE *f)
+{
+    usart_data_transmit(USART0, (uint8_t)ch);
+    while(RESET == usart_flag_get(USART0, USART_FLAG_TBE));
+    return ch;
 }
