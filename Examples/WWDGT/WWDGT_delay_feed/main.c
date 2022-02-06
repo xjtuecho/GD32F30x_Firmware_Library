@@ -39,6 +39,7 @@ OF SUCH DAMAGE.
 #include "gd32f303c_eval.h"
 #include <stdio.h>
 
+uint16_t wwdgtPeriod = 26;
 volatile uint32_t sysTickTimer = 0;
 
 // delays number of tick Systicks
@@ -94,21 +95,24 @@ int main(void)
      */
     wwdgt_config(127, 80, WWDGT_CFG_PSC_DIV8);
     wwdgt_enable();
+    wwdgt_interrupt_enable();
 
     while(1){
         /* insert 26 ms delay */
-        Delay(26);
+        Delay(wwdgtPeriod);
         /* update WWDGT counter */
         wwdgt_counter_update(127);
     }
 }
 
-/*!
-    \brief      this function handles SysTick exception
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
+void WWDGT_IRQHandler(void)
+{
+    if(SET == wwdgt_flag_get()){
+        printf("WWDGT reset, wwdgtPeriod=%d...\r\n", wwdgtPeriod);
+        wwdgt_flag_clear();
+    }
+}
+
 void SysTick_Handler(void)
 {
     sysTickTimer++;
