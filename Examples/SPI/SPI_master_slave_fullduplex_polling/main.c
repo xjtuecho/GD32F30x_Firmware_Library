@@ -39,24 +39,10 @@ OF SUCH DAMAGE.
 #include "gd32f303c_eval.h"
 #include <stdio.h>
 
-#define arraysize         10
-#define SET_SPI0_NSS_HIGH()          gpio_bit_set(GPIOA,GPIO_PIN_3);
-#define SET_SPI0_NSS_LOW()           gpio_bit_reset(GPIOA,GPIO_PIN_3);
+#define arraysize                    10
+#define SET_SPI0_NSS_HIGH()          gpio_bit_set(GPIOA,GPIO_PIN_4);
+#define SET_SPI0_NSS_LOW()           gpio_bit_reset(GPIOA,GPIO_PIN_4);
 
-uint32_t send_n = 0, receive_n = 0;
-uint8_t spi0_send_array[arraysize] = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA};
-uint8_t spi2_send_array[arraysize] = {0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9, 0xBA};
-uint8_t spi0_receive_array[arraysize];
-uint8_t spi2_receive_array[arraysize];
-
-/*!
-    \brief      memory compare function
-    \param[in]  src: source data pointer
-    \param[in]  dst: destination data pointer
-    \param[in]  length: the compare data length
-    \param[out] none
-    \retval     ErrStatus: ERROR or SUCCESS
-*/
 ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint8_t length)
 {
     while (length--){
@@ -65,10 +51,6 @@ ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint8_t length)
     }
     return SUCCESS;
 }
-
-void rcu_config(void);
-void gpio_config(void);
-void spi_config(void);
 
 /*!
     \brief      configure different peripheral clocks
@@ -79,9 +61,9 @@ void spi_config(void);
 void rcu_config(void)
 {
     rcu_periph_clock_enable(RCU_GPIOA);
-    rcu_periph_clock_enable(RCU_GPIOC);
+    rcu_periph_clock_enable(RCU_GPIOB);
     rcu_periph_clock_enable(RCU_SPI0);
-    rcu_periph_clock_enable(RCU_SPI2);
+    rcu_periph_clock_enable(RCU_SPI1);
     rcu_periph_clock_enable(RCU_AF);
 }
 
@@ -93,17 +75,15 @@ void rcu_config(void)
 */
 void gpio_config(void)
 {
-    /* SPI0 GPIO config:SCK/PA5, MISO/PA6, MOSI/PA7 */
+    /* SPI0 GPIO config:NSS/PA4, SCK/PA5, MISO/PA6, MOSI/PA7 */
     gpio_init(GPIOA, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_5 | GPIO_PIN_7);
     gpio_init(GPIOA, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
-    /* PA3 as NSS */
-    gpio_init(GPIOA, GPIO_MODE_OUT_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_3);
+    /* PA4 as NSS */
+    gpio_init(GPIOA, GPIO_MODE_OUT_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_4);
 
-    gpio_pin_remap_config(GPIO_SPI2_REMAP, ENABLE);
-    /* SPI2 GPIO config: NSS/PA4, SCK/PC10, MISO/PC11, MOSI/PC12 */
-    gpio_init(GPIOC, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, GPIO_PIN_10 | GPIO_PIN_12);
-    gpio_init(GPIOC, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_11);
-    gpio_init(GPIOA, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, GPIO_PIN_4);
+    /* SPI1 GPIO config: NSS/PB12, SCK/PB13, MISO/PB14, MOSI/PB15 */
+    gpio_init(GPIOB, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_15);
+    gpio_init(GPIOB, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_14);
 }
 
 /*!
@@ -122,15 +102,53 @@ void spi_config(void)
     spi_init_struct.frame_size           = SPI_FRAMESIZE_8BIT;
     spi_init_struct.clock_polarity_phase = SPI_CK_PL_LOW_PH_1EDGE;
     spi_init_struct.nss                  = SPI_NSS_SOFT;
-    spi_init_struct.prescale             = SPI_PSC_256;
+    spi_init_struct.prescale             = SPI_PSC_32;
     spi_init_struct.endian               = SPI_ENDIAN_MSB;
     spi_init(SPI0, &spi_init_struct);
 
-    /* SPI2 parameter config */
+    /* SPI1 parameter config */
     spi_init_struct.device_mode = SPI_SLAVE;
     spi_init_struct.nss         = SPI_NSS_HARD;
-    spi_init(SPI2, &spi_init_struct);
+    spi_init(SPI1, &spi_init_struct);
 }
+
+int32_t spi_transmit_polling(uint32_t spi_periph, uint16_t data)
+{
+    uint32_t timeout = 0xFFFF;
+
+    while(RESET == spi_i2s_flag_get(spi_periph, SPI_FLAG_TBE)){
+        if(--timeout == 0){
+            return -1;
+        }
+    }
+    spi_i2s_data_transmit(spi_periph, data);
+
+    return 0;
+}
+
+int32_t spi_receive_polling(uint32_t spi_periph, uint16_t *data)
+{
+    uint32_t timeout = 0xFFFF;
+
+    while(RESET == spi_i2s_flag_get(SPI0, SPI_FLAG_RBNE)){
+        if(--timeout == 0){
+            return -1;
+        }
+    }
+    if(data){
+        *data = spi_i2s_data_receive(spi_periph);
+        return 0;
+    } else {
+        return -2;
+    }
+}
+
+uint32_t send_n = 0, receive_n = 0;
+uint16_t spi_data;
+uint8_t spi0_send_array[arraysize] = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA};
+uint8_t spi1_send_array[arraysize] = {0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9, 0xBA};
+uint8_t spi0_receive_array[arraysize];
+uint8_t spi1_receive_array[arraysize];
 
 /*!
     \brief      main function
@@ -154,35 +172,45 @@ int main(void)
     SET_SPI0_NSS_HIGH();
 
     /* SPI enable */
-    spi_enable(SPI2);
+    spi_enable(SPI1);
     spi_enable(SPI0);
 
     SET_SPI0_NSS_LOW();
 
     /* wait for transmit complete */
     while(send_n < arraysize){
-        while(RESET == spi_i2s_flag_get(SPI2, SPI_FLAG_TBE));
-        spi_i2s_data_transmit(SPI2, spi2_send_array[send_n]);
-        while(RESET == spi_i2s_flag_get(SPI0, SPI_FLAG_TBE));
-        spi_i2s_data_transmit(SPI0, spi0_send_array[send_n++]);
-        while(RESET == spi_i2s_flag_get(SPI2, SPI_FLAG_RBNE));
-        spi2_receive_array[receive_n] = spi_i2s_data_receive(SPI2);
-        while(RESET == spi_i2s_flag_get(SPI0, SPI_FLAG_RBNE));
-        spi0_receive_array[receive_n++] = spi_i2s_data_receive(SPI0);
+        if (0 != spi_transmit_polling(SPI1, spi1_send_array[send_n])){
+            printf("SPI1 transmit polling timeout!\r\n");
+        }
+        if (0 != spi_transmit_polling(SPI0, spi0_send_array[send_n])){
+            printf("SPI0 transmit polling timeout!\r\n");
+        }
+        send_n++;
+        if (0 != spi_receive_polling(SPI1, &spi_data)){
+            printf("SPI1 receive polling timeout!\r\n");
+        } else {
+            spi1_receive_array[receive_n] = spi_data;
+        }
+        if (0 != spi_receive_polling(SPI0, &spi_data)){
+            printf("SPI0 receive polling timeout!\r\n");
+        } else {
+            spi0_receive_array[receive_n] = spi_data;
+        }
+        receive_n++;
     }
 
     SET_SPI0_NSS_HIGH();
 
     /* compare receive data with send data */
-    if(memory_compare(spi2_receive_array, spi0_send_array, arraysize))
-        printf("SPI0->SPI2 passed.\r\n");
+    if(memory_compare(spi1_receive_array, spi0_send_array, arraysize))
+        printf("SPI0->SPI1 passed.\r\n");
     else
-        printf("SPI0->SPI2 failed.\r\n");
+        printf("SPI0->SPI1 failed.\r\n");
 
-    if(memory_compare(spi0_receive_array, spi2_send_array, arraysize))
-        printf("SPI2->SPI0 passed\r\n");
+    if(memory_compare(spi0_receive_array, spi1_send_array, arraysize))
+        printf("SPI1->SPI0 passed\r\n");
     else
-        printf("SPI2->SPI0 failed\r\n");
+        printf("SPI1->SPI0 failed\r\n");
 
     while(1);
 }
