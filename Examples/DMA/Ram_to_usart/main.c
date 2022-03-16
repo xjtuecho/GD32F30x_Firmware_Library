@@ -36,16 +36,13 @@ OF SUCH DAMAGE.
 */
 
 #include "gd32f30x.h" 
-#include "gd32f307c_eval.h"
+#include "gd32f303c_eval.h"
   
 #define USART0_DATA_ADDRESS      ((uint32_t)0x40013804)
 #define ARRAYNUM(arr_nanme)      (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
 
 uint8_t welcome[]="hi,this is a example: RAM_TO_USART by DMA !\n";
 FlagStatus g_transfer_complete = RESET;
-
-void led_config(void);
-void nvic_config(void);
 
 /*!
     \brief      main function
@@ -59,14 +56,14 @@ int main(void)
     /* enable DMA clock */
     rcu_periph_clock_enable(RCU_DMA0);
     /* USART configure */
-    gd_eval_com_init(EVAL_COM0);
+    gd_eval_com_init(EVAL_COM1);
     /*configure DMA interrupt*/
-    nvic_config();
+    nvic_irq_enable(DMA0_Channel3_IRQn, 0, 0);
     /* initialize LED2 */
-    led_config();   
+    gd_eval_led_init (LED2);
     /* turn off LED2 */
     gd_eval_led_off(LED2);
-    
+
     /* initialize DMA channel3 */
     dma_deinit(DMA0, DMA_CH3);
     dma_init_struct.direction = DMA_MEMORY_TO_PERIPHERAL;
@@ -103,23 +100,15 @@ int main(void)
 }
 
 /*!
-    \brief      LEDs configure
+    \brief      this function handles DMA_Channel1_2_IRQHandler interrupt
     \param[in]  none
     \param[out] none
     \retval     none
 */
-void led_config(void)
+void DMA0_Channel3_IRQHandler(void)
 {
-    gd_eval_led_init (LED2);
-}
-
-/*!
-    \brief      configure DMA interrupt
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
-void nvic_config(void)
-{
-    nvic_irq_enable(DMA0_Channel3_IRQn, 0, 0);
+    if(dma_interrupt_flag_get(DMA0, DMA_CH3, DMA_INT_FLAG_FTF)){
+        dma_interrupt_flag_clear(DMA0, DMA_CH3, DMA_INT_FLAG_G);
+        g_transfer_complete = SET;
+    }
 }

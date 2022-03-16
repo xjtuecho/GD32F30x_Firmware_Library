@@ -36,7 +36,7 @@ OF SUCH DAMAGE.
 */
 
 #include "gd32f30x.h" 
-#include "gd32f307c_eval.h"
+#include "gd32f303c_eval.h"
 #include <string.h>
 #include <stdio.h>
 
