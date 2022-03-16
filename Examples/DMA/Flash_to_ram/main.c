@@ -86,9 +86,9 @@ int main(void)
 {
     dma_parameter_struct dma_init_struct;
 
+    /* config debug serial port */
     gd_eval_com_init(EVAL_COM1);
-    usart_interrupt_enable(USART0, USART_INT_RBNE);
-    nvic_irq_enable(USART0_IRQn, 0, 0);
+    printf("GD32F303 DMA FLASH to RAM transfer demo.\r\n");
 
     /* enable DMA clock */
     rcu_periph_clock_enable(RCU_DMA0);
