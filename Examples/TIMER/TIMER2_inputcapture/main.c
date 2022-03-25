@@ -37,48 +37,79 @@ OF SUCH DAMAGE.
 
 #include "gd32f30x.h"
 #include <stdio.h>
-#include "gd32f307c_eval.h"
-#include "systick.h"
+#include "gd32f303c_eval.h"
 
-extern __IO uint16_t fre;
-void gpio_configuration(void);
-void timer_configuration(void);
-void nvic_configuration(void);
-int fputc(int ch, FILE *f);
-
-/* retarget the C library printf function to the USART */
-int fputc(int ch, FILE *f)
-{
-    usart_data_transmit(EVAL_COM1, (uint8_t)ch);
-    while(RESET == usart_flag_get(EVAL_COM1, USART_FLAG_TBE));
-    return ch;
-}
+__IO uint32_t sysTickTimer = 0;
+uint16_t readvalue1 = 0, readvalue2 = 0;
+__IO uint16_t ccnumber = 0;
+__IO uint32_t count = 0;
+__IO uint16_t freq = 0;
 
 /*!
-    \brief      configure the GPIO ports
+    \brief      this function handles SysTick exception
     \param[in]  none
     \param[out] none
     \retval     none
 */
-void gpio_configuration(void)
+void SysTick_Handler(void)
 {
-    rcu_periph_clock_enable(RCU_GPIOA);
-    rcu_periph_clock_enable(RCU_AF);
+    sysTickTimer++;
+}
 
-    /*configure PA6 (TIMER2 CH0) as alternate function*/
-    gpio_init(GPIOA,GPIO_MODE_IN_FLOATING,GPIO_OSPEED_50MHZ,GPIO_PIN_6);
+void Delay(uint32_t dlyTicks)
+{
+    uint32_t curTicks = sysTickTimer;
+    while (sysTickTimer - curTicks < dlyTicks);
 }
 
 /*!
-    \brief      configure the nested vectored interrupt controller
+    \brief      this function handles TIMER2 interrupt request.
     \param[in]  none
     \param[out] none
     \retval     none
 */
-void nvic_configuration(void)
+void TIMER2_IRQHandler(void)
 {
-    nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
-    nvic_irq_enable(TIMER2_IRQn, 1, 1);
+    if(SET == timer_interrupt_flag_get(TIMER2, TIMER_INT_FLAG_CH0)){
+        /* clear channel 0 interrupt bit */
+        timer_interrupt_flag_clear(TIMER2, TIMER_INT_FLAG_CH0);
+
+        if(0 == ccnumber) {
+            /* read channel 0 capture value */
+            readvalue1 = timer_channel_capture_value_register_read(TIMER2,TIMER_CH_0)+1;
+            ccnumber = 1;
+        } else if(1 == ccnumber) {
+            /* read channel 0 capture value */
+            readvalue2 = timer_channel_capture_value_register_read(TIMER2,TIMER_CH_0)+1;
+
+            if(readvalue2 > readvalue1) {
+                count = (readvalue2 - readvalue1); 
+            } else {
+                count = ((0xFFFFU - readvalue1) + readvalue2); 
+            }
+
+            freq = 1000000U / count;
+            ccnumber = 0;
+        }
+    }
+}
+
+/*!
+    \brief      configure systick
+    \param[in]  none
+    \param[out] none
+    \retval     none
+*/
+void systick_config(void)
+{
+    /* setup systick timer for 1000Hz interrupts */
+    if (SysTick_Config(SystemCoreClock / 1000U)){
+        /* capture error */
+        while (1){
+        }
+    }
+    /* configure the systick handler priority */
+    NVIC_SetPriority(SysTick_IRQn, 0x00U);
 }
 
 /*!
@@ -87,7 +118,7 @@ void nvic_configuration(void)
     \param[out] none
     \retval     none
 */
-void timer_configuration(void)
+void timer_config(void)
 {
     /* TIMER2 configuration: input capture mode -------------------
     the external signal is connected to TIMER2 CH0 pin (PB4)
@@ -137,15 +168,31 @@ void timer_configuration(void)
 */
 int main(void)
 {
-    gpio_configuration(); 
     gd_eval_com_init(EVAL_COM1);
-    nvic_configuration();
-    timer_configuration();
+
+    rcu_periph_clock_enable(RCU_GPIOA);
+    rcu_periph_clock_enable(RCU_AF);
+    /*configure PA6 (TIMER2 CH0) as alternate function*/
+    gpio_init(GPIOA,GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+
     systick_config();
-    while (1)
-    {
-        delay_1ms(1000);
-        printf("\r /**** TIMER2 Input Capture Demo ****/\r\n");
-        printf("the frequence is %d\n",fre);
+
+    nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
+    nvic_irq_enable(TIMER2_IRQn, 1, 1);
+
+    timer_config();
+
+    while (1) {
+        Delay(1000);
+        printf(" /**** TIMER2 Input Capture Demo ****/\r\n");
+        printf("the frequence is %d\n", freq);
     }
+}
+
+/* retarget the C library printf function to the USART */
+int fputc(int ch, FILE *f)
+{
+    usart_data_transmit(EVAL_COM1, (uint8_t)ch);
+    while(RESET == usart_flag_get(EVAL_COM1, USART_FLAG_TBE));
+    return ch;
 }
