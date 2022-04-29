@@ -41,32 +41,6 @@ OF SUCH DAMAGE.
 
 volatile ErrStatus test_flag_polling;
 volatile ErrStatus test_flag_interrupt;
-extern ErrStatus can_loopback_polling(void);
-extern ErrStatus can_loopback_interrupt(void);
-
-int main(void)
-{
-    gd_eval_com_init(EVAL_COM1);
-    rcu_periph_clock_enable(RCU_CAN0);
-    nvic_irq_enable(CAN0_RX1_IRQn, 0, 0);
-
-    /* loopback of polling */
-    test_flag_polling = can_loopback_polling();
-    if(SUCCESS == test_flag_polling){
-        printf("loopback of polling test is success.\r\n");
-    }else{
-        printf("loopback of polling test is failed.\r\n");
-    }
-
-    /* loopback of interrupt */
-    test_flag_interrupt = can_loopback_interrupt();
-    if(SUCCESS == test_flag_interrupt){
-        printf("loopback of interrupt test is success.\r\n");
-    }else{
-        printf("loopback of interrupt test is failed.\r\n");
-    }
-    while (1);
-}
 
 void can_loopback_init(void)
 {
@@ -230,6 +204,30 @@ void CAN0_RX1_IRQHandler(void)
     }else{
         test_flag_interrupt = ERROR;
     }
+}
+
+int main(void)
+{
+    gd_eval_com_init(EVAL_COM1);
+    rcu_periph_clock_enable(RCU_CAN0);
+    nvic_irq_enable(CAN0_RX1_IRQn, 0, 0);
+
+    /* loopback of polling */
+    test_flag_polling = can_loopback_polling();
+    if(SUCCESS == test_flag_polling){
+        printf("loopback of polling test is success.\r\n");
+    }else{
+        printf("loopback of polling test is failed.\r\n");
+    }
+
+    /* loopback of interrupt */
+    test_flag_interrupt = can_loopback_interrupt();
+    if(SUCCESS == test_flag_interrupt){
+        printf("loopback of interrupt test is success.\r\n");
+    }else{
+        printf("loopback of interrupt test is failed.\r\n");
+    }
+    while (1);
 }
 
 /* retarget the C library printf function to the USART */
