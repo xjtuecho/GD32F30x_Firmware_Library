@@ -53,11 +53,6 @@ void gpio_config(void)
     gpio_pin_remap_config(GPIO_CAN_FULL_REMAP, ENABLE);
 }
 
-void nvic_config(void)
-{
-    nvic_irq_enable(CAN0_RX1_IRQn, 0, 0);
-}
-
 void can_config(void)
 {
     can_parameter_struct can_parameter;
@@ -98,6 +93,11 @@ void can_config(void)
     can_filter.filter_fifo_number = CAN_FIFO1;
     can_filter.filter_enable = ENABLE;
     can_filter_init(&can_filter);
+}
+
+void nvic_config(void)
+{
+    nvic_irq_enable(CAN0_RX1_IRQn, 0, 0);
 }
 
 void CAN0_RX1_IRQHandler(void)
