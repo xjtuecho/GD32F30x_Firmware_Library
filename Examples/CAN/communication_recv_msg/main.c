@@ -53,13 +53,28 @@ void gpio_config(void)
     gpio_pin_remap_config(GPIO_CAN_FULL_REMAP, ENABLE);
 }
 
+void can_init_filter(void)
+{
+    can_filter_parameter_struct can_filter;
+    can_struct_para_init(CAN_FILTER_STRUCT, &can_filter);
+
+    can_filter.filter_number = 0;
+    can_filter.filter_mode = CAN_FILTERMODE_MASK;
+    can_filter.filter_bits = CAN_FILTERBITS_32BIT;
+    can_filter.filter_list_high = 0x0000;
+    can_filter.filter_list_low = 0x0000;
+    can_filter.filter_mask_high = 0x0000;
+    can_filter.filter_mask_low = 0x0000;
+    can_filter.filter_fifo_number = CAN_FIFO1;
+    can_filter.filter_enable = ENABLE;
+    can_filter_init(&can_filter);
+}
+
 void can_config(void)
 {
     can_parameter_struct can_parameter;
-    can_filter_parameter_struct can_filter;
 
     can_struct_para_init(CAN_INIT_STRUCT, &can_parameter);
-    can_struct_para_init(CAN_FILTER_STRUCT, &can_filter);
     can_deinit(CAN0);
 
     /* initialize CAN */
@@ -80,19 +95,8 @@ void can_config(void)
     /* enable CAN receive FIFO1 not empty interrupt */
     can_interrupt_enable(CAN0, CAN_INT_RFNE1);
 
-    /* initialize CAN0 filter number */
-    can_filter.filter_number = 0;
-
     /* initialize filter */
-    can_filter.filter_mode = CAN_FILTERMODE_MASK;
-    can_filter.filter_bits = CAN_FILTERBITS_32BIT;
-    can_filter.filter_list_high = 0x0000;
-    can_filter.filter_list_low = 0x0000;
-    can_filter.filter_mask_high = 0x0000;
-    can_filter.filter_mask_low = 0x0000;
-    can_filter.filter_fifo_number = CAN_FIFO1;
-    can_filter.filter_enable = ENABLE;
-    can_filter_init(&can_filter);
+    can_init_filter();
 }
 
 void nvic_config(void)
