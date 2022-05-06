@@ -59,12 +59,12 @@ void can_init_filter(void)
     can_struct_para_init(CAN_FILTER_STRUCT, &can_filter);
 
     can_filter.filter_number = 0;
-    can_filter.filter_mode = CAN_FILTERMODE_LIST;
-    can_filter.filter_bits = CAN_FILTERBITS_16BIT;
-    can_filter.filter_list_high = 0x0111<<5;
-    can_filter.filter_list_low = 0x0222<<5;
-    can_filter.filter_mask_high = 0x0000;
-    can_filter.filter_mask_low = 0x0000;
+    can_filter.filter_mode = CAN_FILTERMODE_MASK;
+    can_filter.filter_bits = CAN_FILTERBITS_32BIT;
+    can_filter.filter_list_high = 0x1CE<<7;
+    can_filter.filter_list_low = 0x0004;    // FF=1 FT=0
+    can_filter.filter_mask_high = 0xFF80;
+    can_filter.filter_mask_low = 0x0006;
     can_filter.filter_fifo_number = CAN_FIFO1;
     can_filter.filter_enable = ENABLE;
     can_filter_init(&can_filter);
