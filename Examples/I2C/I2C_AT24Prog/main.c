@@ -42,7 +42,7 @@ OF SUCH DAMAGE.
 #include <string.h>
 #include <stdlib.h>
 
-#define I2C0_SLAVE_ADDRESS7     0x50
+#define I2C0_SLAVE_ADDRESS7     0xA0
 
 #define TX_LEN  128
 #define RX_LEN  128
@@ -103,31 +103,27 @@ uint8_t EE24_Write(uint16_t addr, uint8_t *dat, uint8_t len)
     /* wait until I2C bus is idle */
     while(i2c_flag_get(I2C0, I2C_FLAG_I2CBSY));
 
-    /* send a start condition to I2C bus */
+    /* send START */
     i2c_start_on_bus(I2C0);
-    /* wait until SBSEND bit is set */
     while(!i2c_flag_get(I2C0, I2C_FLAG_SBSEND));
 
-    /* send slave address to I2C bus*/
-    i2c_master_addressing(I2C0, I2C0_SLAVE_ADDRESS7, I2C_TRANSMITTER);
+    /* send slave address */
+    i2c_master_addressing(I2C0, I2C0_SLAVE_ADDRESS7&0xFE, I2C_TRANSMITTER);
+    while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
 
-    /* send a data byte */
+    /* send word address */
     i2c_data_transmit(I2C0, addr&0xFF);
-    /* wait until the transmission data register is empty*/
     while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
 
     while(len>0)
     {
-        /* send a data byte */
-        i2c_data_transmit(I2C0, addr&0xFF);
-        /* wait until the transmission data register is empty*/
+        i2c_data_transmit(I2C0, *dat++);
         while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
         len--;
     }
 
-    /* send a stop condition to I2C bus*/
+    /* send STOP */
     i2c_stop_on_bus(I2C0);
-    /* wait until stop condition generate */
     while(I2C_CTL0(I2C0)&0x0200);
 
     return 0;
@@ -140,45 +136,41 @@ uint8_t EE24_Read(uint16_t addr, uint8_t *dat, uint8_t len)
     /* wait until I2C bus is idle */
     while(i2c_flag_get(I2C0, I2C_FLAG_I2CBSY));
 
-    /* send a start condition to I2C bus */
+    /* send START */
     i2c_start_on_bus(I2C0);
-    /* wait until SBSEND bit is set */
     while(!i2c_flag_get(I2C0, I2C_FLAG_SBSEND));
 
-    /* send slave address to I2C bus*/
-    i2c_master_addressing(I2C0, I2C0_SLAVE_ADDRESS7, I2C_TRANSMITTER);
-
-    /* send a data byte */
-    i2c_data_transmit(I2C0, addr&0xFF);
-    /* wait until the transmission data register is empty*/
+    /* send slave address */
+    i2c_master_addressing(I2C0, I2C0_SLAVE_ADDRESS7&0xFE, I2C_TRANSMITTER);
     while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
 
-    /* send a start condition to I2C bus */
+    /* send word address */
+    i2c_data_transmit(I2C0, addr&0xFF);
+    while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
+
+    /* send START */
     i2c_start_on_bus(I2C0);
-    /* wait until SBSEND bit is set */
     while(!i2c_flag_get(I2C0, I2C_FLAG_SBSEND));
 
-    /* send slave address to I2C bus*/
-    i2c_master_addressing(I2C0, I2C0_SLAVE_ADDRESS7, I2C_TRANSMITTER);
+    /* send slave address */
+    i2c_master_addressing(I2C0, I2C0_SLAVE_ADDRESS7|0x01, I2C_TRANSMITTER);
+    while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
 
+    i2c_ack_config(I2C0, I2C_ACK_ENABLE);
     for(i=0;i<len-1;i++)
     {
-        /* wait until the RBNE bit is set */
-        while(!i2c_flag_get(I2C0, I2C_FLAG_RBNE));
         /* read a data from I2C_DATA */
+        while(!i2c_flag_get(I2C0, I2C_FLAG_RBNE));
         dat[i] = i2c_data_receive(I2C0);
-      //I2C_Ack(EE24_I2CCH);		// MCU Ack
     }
 
-    /* wait until the RBNE bit is set */
-    while(!i2c_flag_get(I2C0, I2C_FLAG_RBNE));
+    i2c_ack_config(I2C0, I2C_ACK_DISABLE);
     /* read a data from I2C_DATA */
+    while(!i2c_flag_get(I2C0, I2C_FLAG_RBNE));
     dat[i] = i2c_data_receive(I2C0);
-  //I2C_Nack(EE24_I2CCH);
 
     /* send a stop condition to I2C bus*/
     i2c_stop_on_bus(I2C0);
-    /* wait until stop condition generate */
     while(I2C_CTL0(I2C0)&0x0200);
 
     return 0;
