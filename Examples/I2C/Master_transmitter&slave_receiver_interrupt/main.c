@@ -187,6 +187,25 @@ void I2C0_EV_IRQHandler(void)
     }
 }
 
+void I2C1_EV_IRQHandler(void)
+{
+    if(i2c_interrupt_flag_get(I2C1, I2C_INT_FLAG_ADDSEND)){
+        /* clear the ADDSEND bit */
+        i2c_interrupt_flag_clear(I2C1, I2C_INT_FLAG_ADDSEND);
+    }else if(i2c_interrupt_flag_get(I2C1, I2C_INT_FLAG_RBNE)){
+        /* if reception data register is not empty ,I2C1 will read a data from I2C_DATA */
+        *i2c_rxbuffer++ = i2c_data_receive(I2C1);
+    }else if(i2c_interrupt_flag_get(I2C1, I2C_INT_FLAG_STPDET)){
+        status = SUCCESS;
+        /* clear the STPDET bit */
+        i2c_enable(I2C1);
+        /* disable I2C1 interrupt */
+        i2c_interrupt_disable(I2C1, I2C_INT_ERR);
+        i2c_interrupt_disable(I2C1, I2C_INT_BUF);
+        i2c_interrupt_disable(I2C1, I2C_INT_EV);
+    }
+}
+
 void I2C0_ER_IRQHandler(void)
 {
     /* no acknowledge received */
@@ -227,25 +246,6 @@ void I2C0_ER_IRQHandler(void)
     i2c_interrupt_disable(I2C0, I2C_INT_ERR);
     i2c_interrupt_disable(I2C0, I2C_INT_BUF);
     i2c_interrupt_disable(I2C0, I2C_INT_EV);
-}
-
-void I2C1_EV_IRQHandler(void)
-{
-    if(i2c_interrupt_flag_get(I2C1, I2C_INT_FLAG_ADDSEND)){
-        /* clear the ADDSEND bit */
-        i2c_interrupt_flag_clear(I2C1, I2C_INT_FLAG_ADDSEND);
-    }else if(i2c_interrupt_flag_get(I2C1, I2C_INT_FLAG_RBNE)){
-        /* if reception data register is not empty ,I2C1 will read a data from I2C_DATA */
-        *i2c_rxbuffer++ = i2c_data_receive(I2C1);
-    }else if(i2c_interrupt_flag_get(I2C1, I2C_INT_FLAG_STPDET)){
-        status = SUCCESS;
-        /* clear the STPDET bit */
-        i2c_enable(I2C1);
-        /* disable I2C1 interrupt */
-        i2c_interrupt_disable(I2C1, I2C_INT_ERR);
-        i2c_interrupt_disable(I2C1, I2C_INT_BUF);
-        i2c_interrupt_disable(I2C1, I2C_INT_EV);
-    }
 }
 
 void I2C1_ER_IRQHandler(void)
