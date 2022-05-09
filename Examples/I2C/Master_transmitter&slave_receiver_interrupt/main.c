@@ -45,10 +45,10 @@ OF SUCH DAMAGE.
 uint8_t i2c_transmitter[16];
 uint8_t i2c_receiver[16];
 
-volatile uint8_t*       i2c_txbuffer;
-volatile uint8_t*       i2c_rxbuffer;
-volatile uint16_t       I2C_nBytes;
-volatile ErrStatus      status;
+volatile uint8_t*  i2c_txbuffer = i2c_transmitter;
+volatile uint8_t*  i2c_rxbuffer = i2c_receiver;
+volatile uint16_t  I2C_nBytes = 16;
+volatile ErrStatus status = ERROR;
 __IO ErrStatus state = ERROR;
 
 ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint16_t length)
@@ -92,6 +92,11 @@ void i2c_config(void)
     i2c_enable(I2C0);
     /* enable acknowledge */
     i2c_ack_config(I2C0, I2C_ACK_ENABLE);
+    /* enable the I2C0 interrupt */
+    i2c_interrupt_enable(I2C0, I2C_INT_ERR);
+    i2c_interrupt_enable(I2C0, I2C_INT_BUF);
+    i2c_interrupt_enable(I2C0, I2C_INT_EV);
+
     /* configure I2C1 clock */
     i2c_clock_config(I2C1, 100000, I2C_DTCY_2);
     /* configure I2C1 address */
@@ -101,14 +106,18 @@ void i2c_config(void)
     i2c_enable(I2C1);
     /* enable acknowledge */
     i2c_ack_config(I2C1, I2C_ACK_ENABLE);
+    /* enable the I2C1 interrupt */
+    i2c_interrupt_enable(I2C1, I2C_INT_ERR);
+    i2c_interrupt_enable(I2C1, I2C_INT_BUF);
+    i2c_interrupt_enable(I2C1, I2C_INT_EV);
 }
 
 void nvic_config(void)
 {
     nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
     nvic_irq_enable(I2C0_EV_IRQn, 0, 3);
-    nvic_irq_enable(I2C1_EV_IRQn, 0, 4);
     nvic_irq_enable(I2C0_ER_IRQn, 0, 2);
+    nvic_irq_enable(I2C1_EV_IRQn, 0, 4);
     nvic_irq_enable(I2C1_ER_IRQn, 0, 1);
 }
 
@@ -126,20 +135,6 @@ int main(void)
         i2c_transmitter[i]=i+0x80;
         i2c_receiver[i] = 0x00;
     }
-    /* initialize i2c_txbuffer, i2c_rxbuffer, I2C_nBytes and status */
-    i2c_txbuffer = i2c_transmitter;
-    i2c_rxbuffer = i2c_receiver;
-    I2C_nBytes = 16;
-    status = ERROR;
-
-    /* enable the I2C0 interrupt */
-    i2c_interrupt_enable(I2C0, I2C_INT_ERR);
-    i2c_interrupt_enable(I2C0, I2C_INT_BUF);
-    i2c_interrupt_enable(I2C0, I2C_INT_EV);
-    /* enable the I2C1 interrupt */
-    i2c_interrupt_enable(I2C1, I2C_INT_ERR);
-    i2c_interrupt_enable(I2C1, I2C_INT_BUF);
-    i2c_interrupt_enable(I2C1, I2C_INT_EV);
 
     printf("I2C Master_transmitter&slave_receiver demo\r\n");
 
@@ -294,3 +289,4 @@ void I2C1_ER_IRQHandler(void)
     i2c_interrupt_disable(I2C1, I2C_INT_BUF);
     i2c_interrupt_disable(I2C1, I2C_INT_EV);
 }
+

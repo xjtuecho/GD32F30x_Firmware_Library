@@ -149,7 +149,7 @@ int main(void)
     while(!i2c_flag_get(I2C1, I2C_FLAG_STPDET));
     /* clear the STPDET bit */
     i2c_enable(I2C1);
-    state = memory_compare(i2c_transmitter, i2c_receiver,16);
+    state = memory_compare(i2c_transmitter, i2c_receiver, 16);
     if(SUCCESS == state){
         printf("I2C Master_transmitter&slave_receiver passed!\r\n");
     }else{
