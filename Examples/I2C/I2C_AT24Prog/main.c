@@ -42,7 +42,7 @@ OF SUCH DAMAGE.
 #include <string.h>
 #include <stdlib.h>
 
-#define I2C0_SLAVE_ADDRESS7     0xA0
+#define EEPROM_ADDR     0xA0
 
 #define TX_LEN  128
 #define RX_LEN  128
@@ -102,86 +102,68 @@ uint8_t EE24_Write(uint16_t addr, uint8_t *dat, uint8_t len)
 {
     /* wait until I2C bus is idle */
     while(i2c_flag_get(I2C0, I2C_FLAG_I2CBSY));
-
     /* send START */
     i2c_start_on_bus(I2C0);
     while(!i2c_flag_get(I2C0, I2C_FLAG_SBSEND));
-
     /* send slave address */
-    i2c_master_addressing(I2C0, I2C0_SLAVE_ADDRESS7&0xFE, I2C_TRANSMITTER);
-    while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
-
+    i2c_master_addressing(I2C0, EEPROM_ADDR, I2C_TRANSMITTER);
+    while(!i2c_flag_get(I2C0, I2C_FLAG_ADDSEND));
+    i2c_flag_clear(I2C0, I2C_FLAG_ADDSEND);
     /* send word address */
     i2c_data_transmit(I2C0, addr&0xFF);
     while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
-
-    while(len>0)
-    {
+    while(len > 0) {
         i2c_data_transmit(I2C0, *dat++);
         while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
         len--;
     }
-
     /* send STOP */
     i2c_stop_on_bus(I2C0);
     while(I2C_CTL0(I2C0)&0x0200);
-
     return 0;
 }
 
 uint8_t EE24_Read(uint16_t addr, uint8_t *dat, uint8_t len)
 {
-    uint8_t i=0;
-
+    uint8_t i = 0;
     /* wait until I2C bus is idle */
     while(i2c_flag_get(I2C0, I2C_FLAG_I2CBSY));
-
     /* send START */
     i2c_start_on_bus(I2C0);
     while(!i2c_flag_get(I2C0, I2C_FLAG_SBSEND));
-
     /* send slave address */
-    i2c_master_addressing(I2C0, I2C0_SLAVE_ADDRESS7&0xFE, I2C_TRANSMITTER);
-    while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
-
+    i2c_master_addressing(I2C0, EEPROM_ADDR, I2C_TRANSMITTER);
+    while(!i2c_flag_get(I2C0, I2C_FLAG_ADDSEND));
+    i2c_flag_clear(I2C0, I2C_FLAG_ADDSEND);
     /* send word address */
     i2c_data_transmit(I2C0, addr&0xFF);
     while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
-
     /* send START */
     i2c_start_on_bus(I2C0);
     while(!i2c_flag_get(I2C0, I2C_FLAG_SBSEND));
-
     /* send slave address */
-    i2c_master_addressing(I2C0, I2C0_SLAVE_ADDRESS7|0x01, I2C_TRANSMITTER);
-    while(!i2c_flag_get(I2C0, I2C_FLAG_TBE));
-
-    i2c_ack_config(I2C0, I2C_ACK_ENABLE);
-    for(i=0;i<len-1;i++)
-    {
-        /* read a data from I2C_DATA */
+    i2c_master_addressing(I2C0, EEPROM_ADDR, I2C_RECEIVER);
+    while(!i2c_flag_get(I2C0, I2C_FLAG_ADDSEND));
+    i2c_flag_clear(I2C0, I2C_FLAG_ADDSEND);
+    for(i=0; i<len-1; i++) {
         while(!i2c_flag_get(I2C0, I2C_FLAG_RBNE));
         dat[i] = i2c_data_receive(I2C0);
     }
-
     i2c_ack_config(I2C0, I2C_ACK_DISABLE);
-    /* read a data from I2C_DATA */
+    i2c_stop_on_bus(I2C0);
     while(!i2c_flag_get(I2C0, I2C_FLAG_RBNE));
     dat[i] = i2c_data_receive(I2C0);
-
     /* send a stop condition to I2C bus*/
-    i2c_stop_on_bus(I2C0);
     while(I2C_CTL0(I2C0)&0x0200);
-
+    i2c_ack_config(I2C0, I2C_ACK_ENABLE);
     return 0;
 }
 
 void PrintByteBuffer(const uint8_t *buf, uint32_t start, uint32_t len)
 {
     uint16_t i = 0, j = 0;
-
     while(i<len) {
-        printf("0x%08X ", start+i);
+        printf("0x%04X ", start+i);
         for(j=0; j<16; j++)
             printf("%02X ", buf[i+j]);
         for(j=0; j<16; j++)
@@ -236,14 +218,15 @@ void syscall_help(void)
 void syscall_eerd(void)
 {
     uint32_t startAddr = 0;
-    uint16_t memlen = 0;
+    uint16_t memlen = 0, i = 0;
 
     if(syscall_param1) {
         startAddr = strtoul(syscall_param1, NULL, 16);
         if(syscall_param2)
             memlen = strtoul(syscall_param2, NULL, 16);
         memlen =  (memlen < 8 || memlen > 0x100) ? 0x100 : memlen;
-        EE24_Read(startAddr, syscall_buf, memlen);
+        for(i=0; i<memlen; i+=8)
+            EE24_Read(startAddr+i, &syscall_buf[i], 8);
         PrintByteBuffer(syscall_buf, startAddr, memlen);
     }
 }
@@ -258,7 +241,7 @@ void syscall_eewr(void)
         syscall_buf[0] = strtoul(syscall_param2, NULL, 16);
         EE24_Write(startAddr, syscall_buf, 1);
         printf(" write 0x%02X to", syscall_buf[0]);
-        printf(" flash address 0x%08X ...\r\n", startAddr);
+        printf(" flash address 0x%04X ...\r\n", startAddr);
     }
 }
 
@@ -280,7 +263,7 @@ void i2c_config(void)
     i2c_clock_config(I2C0, 100000, I2C_DTCY_2);
     /* configure I2C0 address */
     i2c_mode_addr_config(I2C0, I2C_I2CMODE_ENABLE,
-                         I2C_ADDFORMAT_7BITS, I2C0_SLAVE_ADDRESS7);
+                         I2C_ADDFORMAT_7BITS, EEPROM_ADDR);
     /* enable I2C0 */
     i2c_enable(I2C0);
     /* enable acknowledge */
