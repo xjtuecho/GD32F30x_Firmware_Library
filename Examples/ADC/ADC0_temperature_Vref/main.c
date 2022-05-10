@@ -41,7 +41,8 @@ OF SUCH DAMAGE.
 
 uint16_t adc_raw[2];
 uint16_t temperature;
-uint16_t vref_value;
+uint16_t vdd_value;
+uint32_t vrefint = 1228L;
 
 volatile uint32_t sysTickTimer = 0;
 
@@ -131,13 +132,11 @@ int main(void)
         Delay(2000);
         adc_raw[0] = ADC_IDATA0(ADC0);
         adc_raw[1] = ADC_IDATA1(ADC0);
-        /* value convert */
-        temperature = (1450 - (adc_raw[0]*3300L>>12)) * 10 / 41 + 250;
-        vref_value = adc_raw[1]*3300L>>12;
-
+        vdd_value = vrefint * 4096L / adc_raw[1];
+        temperature = (1450L - (adc_raw[0]*vdd_value>>12)) * 10 / 41 + 250;
         /* value print */
-        printf(" the temperature data is %d.%d oC\r\n", temperature/10, temperature%10);
-        printf(" the reference voltage data is %dmV \r\n", vref_value);
+        printf(" the temperature  is %d.%d oC 0x%04X\r\n", temperature/10, temperature%10, adc_raw[0]);
+        printf(" the VDDA voltage is %d mV 0x%04X\r\n", vdd_value, adc_raw[1]);
         printf(" \r\n");
     }
 
