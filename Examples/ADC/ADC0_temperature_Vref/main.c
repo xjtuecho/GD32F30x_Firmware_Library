@@ -88,7 +88,8 @@ void adc_config(void)
     adc_special_function_config(ADC0, ADC_SCAN_MODE, ENABLE);
     adc_special_function_config(ADC0, ADC_CONTINUOUS_MODE, DISABLE);
     /* ADC trigger config */
-    adc_external_trigger_source_config(ADC0, ADC_INSERTED_CHANNEL, ADC0_1_2_EXTTRIG_INSERTED_NONE);
+    adc_external_trigger_source_config(ADC0, ADC_INSERTED_CHANNEL,
+        ADC0_1_2_EXTTRIG_INSERTED_NONE);
     /* ADC mode config */
     adc_mode_config(ADC_MODE_FREE);
     /* ADC data alignment config */
@@ -96,17 +97,14 @@ void adc_config(void)
     /* ADC channel length config */
     adc_channel_length_config(ADC0, ADC_INSERTED_CHANNEL, 2);
 
-
     /* ADC temperature sensor channel config */
     adc_inserted_channel_config(ADC0, 0, ADC_CHANNEL_16, ADC_SAMPLETIME_239POINT5);
     /* ADC internal reference voltage channel config */
     adc_inserted_channel_config(ADC0, 1, ADC_CHANNEL_17, ADC_SAMPLETIME_239POINT5);
-
     adc_external_trigger_config(ADC0, ADC_INSERTED_CHANNEL, ENABLE);
 
     /* ADC temperature and Vrefint enable */
     adc_tempsensor_vrefint_enable();
-
 
     /* enable ADC interface */
     adc_enable(ADC0);
@@ -129,17 +127,17 @@ int main(void)
         /* ADC software trigger enable */
         adc_software_trigger_enable(ADC0, ADC_INSERTED_CHANNEL);
         /* delay a time in milliseconds */
-        Delay(2000);
+        Delay(1000);
         adc_raw[0] = ADC_IDATA0(ADC0);
         adc_raw[1] = ADC_IDATA1(ADC0);
         vdd_value = vrefint * 4096L / adc_raw[1];
         temperature = (1450L - (adc_raw[0]*vdd_value>>12)) * 10 / 41 + 250;
         /* value print */
-        printf(" the temperature  is %d.%d oC 0x%04X\r\n", temperature/10, temperature%10, adc_raw[0]);
-        printf(" the VDDA voltage is %d mV 0x%04X\r\n", vdd_value, adc_raw[1]);
-        printf(" \r\n");
+        printf(" CH16=0x%04X the temperature  is %d.%d oC\r\n",
+            adc_raw[0], temperature/10, temperature%10);
+        printf(" CH17=0x%04X the VDDA voltage is %d mV\r\n\r\n",
+            adc_raw[1], vdd_value);
     }
-
 }
 
 int fputc(int ch, FILE *f)
