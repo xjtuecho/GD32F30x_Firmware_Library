@@ -127,10 +127,10 @@ void timer_config(void)
     timer_parameter_struct timer_initpara;
 
     /* TIMER1 configuration */
-    timer_initpara.prescaler         = 8399;
+    timer_initpara.prescaler         = 12000-1;
     timer_initpara.alignedmode       = TIMER_COUNTER_EDGE;
     timer_initpara.counterdirection  = TIMER_COUNTER_UP;
-    timer_initpara.period            = 9999;
+    timer_initpara.period            = 10000-1;
     timer_initpara.clockdivision     = TIMER_CKDIV_DIV1;
     timer_initpara.repetitioncounter = 0;
     timer_init(TIMER1,&timer_initpara);
@@ -140,7 +140,7 @@ void timer_config(void)
     timer_ocintpara.outputstate = TIMER_CCX_ENABLE;
     timer_channel_output_config(TIMER1, TIMER_CH_1, &timer_ocintpara);
 
-    timer_channel_output_pulse_value_config(TIMER1, TIMER_CH_1, 3999);
+    timer_channel_output_pulse_value_config(TIMER1, TIMER_CH_1, 4000-1);
     timer_channel_output_mode_config(TIMER1, TIMER_CH_1, TIMER_OC_MODE_PWM1);
     timer_channel_output_shadow_config(TIMER1, TIMER_CH_1, TIMER_OC_SHADOW_DISABLE);
 }
@@ -149,12 +149,12 @@ void adc_config(void)
 {
     /* ADC continous function enable */
     adc_special_function_config(ADC0, ADC_SCAN_MODE, ENABLE);
-    adc_special_function_config(ADC0, ADC_CONTINUOUS_MODE, DISABLE);
     adc_special_function_config(ADC1, ADC_SCAN_MODE, ENABLE);
-    adc_special_function_config(ADC1, ADC_CONTINUOUS_MODE, DISABLE);
     /* ADC trigger config */
-    adc_external_trigger_source_config(ADC0, ADC_REGULAR_CHANNEL, ADC0_1_EXTTRIG_REGULAR_T1_CH1);
-    adc_external_trigger_source_config(ADC1, ADC_REGULAR_CHANNEL, ADC0_1_2_EXTTRIG_REGULAR_NONE);
+    adc_external_trigger_source_config(ADC0, ADC_REGULAR_CHANNEL,
+        ADC0_1_EXTTRIG_REGULAR_T1_CH1);
+    adc_external_trigger_source_config(ADC1, ADC_REGULAR_CHANNEL,
+        ADC0_1_2_EXTTRIG_REGULAR_NONE);
     /* ADC data alignment config */
     adc_data_alignment_config(ADC0, ADC_DATAALIGN_RIGHT);
     adc_data_alignment_config(ADC1, ADC_DATAALIGN_RIGHT);
@@ -210,8 +210,8 @@ int main(void)
 
     while(1){
         Delay(1000);
-        printf("\r\n ADC0: PA0, adc_value[0] = %08X \r\n", adc_value[0]);
-        printf("\r\n ADC1: PA1, adc_value[1] = %08X \r\n", adc_value[1]);
+        printf(" ADC0: PA0, adc_value[0] = 0x%08X\r\n", adc_value[0]);
+        printf(" ADC1: PA1, adc_value[1] = 0x%08X\r\n\r\n", adc_value[1]);
     }
 }
 
