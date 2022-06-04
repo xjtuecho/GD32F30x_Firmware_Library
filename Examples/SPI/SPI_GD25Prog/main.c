@@ -45,8 +45,8 @@ OF SUCH DAMAGE.
 #define LOBYTE(w)          (w&0xFF)
 #define HIBYTE(w)          ((w>>8)&0xFF)
 
-#define GD25_CS_HIGH()     gpio_bit_set(GPIOE, GPIO_PIN_3)
-#define GD25_CS_LOW()      gpio_bit_reset(GPIOE, GPIO_PIN_3)
+#define GD25_CS_HIGH()     gpio_bit_set(GPIOB, GPIO_PIN_12)
+#define GD25_CS_LOW()      gpio_bit_reset(GPIOB, GPIO_PIN_12)
 
 #define TX_LEN  128
 #define RX_LEN  128
@@ -110,7 +110,7 @@ uint16_t SPI_SwapByte(uint8_t byte)
 
     // wait for TBE = 1
     timeout = 0xFFFF;
-    while(spi_i2s_flag_get(SPI0, SPI_FLAG_TBE) == RESET){
+    while(spi_i2s_flag_get(SPI1, SPI_FLAG_TBE) == RESET){
         timeout--;
         if(0 == timeout) {
             SPI_TimeoutCnt++;
@@ -118,10 +118,10 @@ uint16_t SPI_SwapByte(uint8_t byte)
         }
     }
     // Send byte through the SPI peripheral
-    spi_i2s_data_transmit(SPI0, byte);
+    spi_i2s_data_transmit(SPI1, byte);
     // wait for RBNE = 1
     timeout = 0xFFFF;
-    while(spi_i2s_flag_get(SPI0, SPI_FLAG_RBNE) == RESET) {
+    while(spi_i2s_flag_get(SPI1, SPI_FLAG_RBNE) == RESET) {
         timeout--;
         if(0 == timeout) {
             SPI_TimeoutCnt++;
@@ -129,10 +129,10 @@ uint16_t SPI_SwapByte(uint8_t byte)
         }
     }
     // Return the byte read from the SPI bus
-    recv = spi_i2s_data_receive(SPI0);
+    recv = spi_i2s_data_receive(SPI1);
     // wait for TRANS = 0
     timeout = 0xFFFF;
-    while (spi_i2s_flag_get(SPI0, SPI_FLAG_TRANS) == SET) {
+    while (spi_i2s_flag_get(SPI1, SPI_FLAG_TRANS) == SET) {
         timeout--;
         if(0 == timeout) {
             SPI_TimeoutCnt++;
@@ -334,8 +334,8 @@ void syscall_version(void)
 void rcu_config(void)
 {
     rcu_periph_clock_enable(RCU_GPIOA);
-    rcu_periph_clock_enable(RCU_GPIOE);
-    rcu_periph_clock_enable(RCU_SPI0);
+    rcu_periph_clock_enable(RCU_GPIOB);
+    rcu_periph_clock_enable(RCU_SPI1);
     rcu_periph_clock_enable(RCU_AF);
 }
 
@@ -343,7 +343,7 @@ void spi_config(void)
 {
     spi_parameter_struct spi_init_struct;
 
-    /* SPI0 parameter config */
+    /* SPI1 parameter config */
     spi_init_struct.trans_mode           = SPI_TRANSMODE_FULLDUPLEX;
     spi_init_struct.device_mode          = SPI_MASTER;
     spi_init_struct.frame_size           = SPI_FRAMESIZE_8BIT;
@@ -351,17 +351,17 @@ void spi_config(void)
     spi_init_struct.nss                  = SPI_NSS_SOFT;
     spi_init_struct.prescale             = SPI_PSC_8;   // 120M/8=15M
     spi_init_struct.endian               = SPI_ENDIAN_MSB;
-    spi_init(SPI0, &spi_init_struct);
-    spi_enable(SPI0);
+    spi_init(SPI1, &spi_init_struct);
+    spi_enable(SPI1);
 }
 
 void gpio_config(void)
 {
-    /* SPI0 GPIO config:NSS/PE3, SCK/PA5, MISO/PA6, MOSI/PA7 */
-    gpio_init(GPIOA, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_5 | GPIO_PIN_7);
-    gpio_init(GPIOA, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
-    /* PE3 as NSS */
-    gpio_init(GPIOE, GPIO_MODE_OUT_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_3);
+    /* SPI1 GPIO config:NSS/PB12, SCK/PB13, MISO/PB14, MOSI/PB15 */
+    gpio_init(GPIOB, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_13 | GPIO_PIN_15);
+    gpio_init(GPIOB, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, GPIO_PIN_14);
+    /* PB12 as NSS */
+    gpio_init(GPIOB, GPIO_MODE_OUT_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_12);
     GD25_CS_HIGH();
 }
 
