@@ -76,7 +76,7 @@ void rcu_config(void)
 {
     rcu_periph_clock_enable(RCU_AF);
     /* enable GPIOA clock */
-    rcu_periph_clock_enable(RCU_GPIOC);
+    rcu_periph_clock_enable(RCU_GPIOA);
     /* enable ADC clock */
     rcu_periph_clock_enable(RCU_ADC0);
     /* config ADC clock */
@@ -86,7 +86,7 @@ void rcu_config(void)
 void gpio_config(void)
 {
     /* config the GPIO as analog mode */
-    gpio_init(GPIOC, GPIO_MODE_AIN, GPIO_OSPEED_10MHZ, GPIO_PIN_3);
+    gpio_init(GPIOA, GPIO_MODE_AIN, GPIO_OSPEED_10MHZ, GPIO_PIN_2);
 }
 
 void adc_config(void)
@@ -105,7 +105,7 @@ void adc_config(void)
     adc_external_trigger_config(ADC0, ADC_REGULAR_CHANNEL, ENABLE);
 
     /* ADC regular channel config */
-    adc_regular_channel_config(ADC0, 0U, 13, ADC_SAMPLETIME_239POINT5);
+    adc_regular_channel_config(ADC0, 0U, 2, ADC_SAMPLETIME_239POINT5);
 
     /* enable ADC interface */
     adc_enable(ADC0);
