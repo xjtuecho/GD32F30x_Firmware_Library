@@ -44,16 +44,16 @@ can_trasnmit_message_struct transmit_message;
 void gpio_config(void)
 {
     rcu_periph_clock_enable(RCU_GPIOA);
-    rcu_periph_clock_enable(RCU_GPIOD);
+    rcu_periph_clock_enable(RCU_GPIOB);
     rcu_periph_clock_enable(RCU_AF);
 
     /* PA0 = KEY1 */
     gpio_init(GPIOA, GPIO_MODE_IPU,   GPIO_OSPEED_2MHZ,  GPIO_PIN_0);
 
-    /* PD0 = CAN0_RX, PD1 = CAN0_TX*/
-    gpio_init(GPIOD, GPIO_MODE_IPU,   GPIO_OSPEED_50MHZ, GPIO_PIN_0);
-    gpio_init(GPIOD, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_1);
-    gpio_pin_remap_config(GPIO_CAN_FULL_REMAP, ENABLE);
+    /* PB8 = CAN0_RX, PB9 = CAN0_TX*/
+    gpio_init(GPIOB, GPIO_MODE_IPU,   GPIO_OSPEED_50MHZ, GPIO_PIN_8);
+    gpio_init(GPIOB, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
+    gpio_pin_remap_config(GPIO_CAN_PARTIAL_REMAP, ENABLE);
 }
 
 void can_config(void)
