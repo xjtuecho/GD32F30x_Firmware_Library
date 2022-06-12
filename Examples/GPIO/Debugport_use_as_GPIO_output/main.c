@@ -36,9 +36,37 @@ OF SUCH DAMAGE.
 */
 
 #include "gd32f30x.h"
-#include "gd32f307c_eval.h"
-#include "systick.h"
-#include <stdio.h>
+#include "gd32f303c_eval.h"
+
+volatile uint32_t sysTickTimer = 0;
+
+void systick_config(void)
+{
+    /* setup systick timer for 1000Hz interrupts */
+    if (SysTick_Config(SystemCoreClock / 1000U)){
+        /* capture error */
+        while (1){
+        }
+    }
+    /* configure the systick handler priority */
+    NVIC_SetPriority(SysTick_IRQn, 0x00U);
+}
+
+void SysTick_Handler(void)
+{
+    sysTickTimer++;
+}
+
+//  delays number of tick Systicks (happens every 1 ms)
+void Delay(uint32_t dlyTicks)
+{
+    uint32_t curTicks;
+
+    curTicks = sysTickTimer;
+    while ((sysTickTimer - curTicks) < dlyTicks) {
+        __NOP();
+    }
+}
 
 /*!
     \brief      main function
@@ -49,19 +77,28 @@ OF SUCH DAMAGE.
 int main(void)
 {
     systick_config();
-    
+
+    rcu_periph_clock_enable(RCU_GPIOA);
     rcu_periph_clock_enable(RCU_GPIOB);
     rcu_periph_clock_enable(RCU_AF);
     
     /* SWD remap */
     gpio_pin_remap_config(GPIO_SWJ_SWDPENABLE_REMAP, ENABLE);
-    /* GPIOB output */
-    gpio_init(GPIOB, GPIO_MODE_OUT_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_3|GPIO_PIN_4);
-    
+    /* PA15 = JTDI default */
+    gpio_init(GPIOA, GPIO_MODE_OUT_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_15);
+    /* PB3  = JTDO default */
+    gpio_init(GPIOB, GPIO_MODE_OUT_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_3);
+    /* PB4  = NJTRST default */
+    gpio_init(GPIOB, GPIO_MODE_OUT_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_4);
+
     while(1){
-        gpio_bit_set(GPIOB, GPIO_PIN_3|GPIO_PIN_4);
-        delay_1ms(500);
-        gpio_bit_reset(GPIOB, GPIO_PIN_3|GPIO_PIN_4);
-        delay_1ms(500);
+        gpio_bit_set(GPIOA, GPIO_PIN_15);
+        gpio_bit_set(GPIOB, GPIO_PIN_3);
+        gpio_bit_set(GPIOB, GPIO_PIN_4);
+        Delay(500);
+        gpio_bit_reset(GPIOB, GPIO_PIN_15);
+        gpio_bit_reset(GPIOB, GPIO_PIN_3);
+        gpio_bit_reset(GPIOB, GPIO_PIN_4);
+        Delay(500);
     }
 }
