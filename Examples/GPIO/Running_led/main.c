@@ -74,13 +74,16 @@ void gpio_config(void)
     rcu_periph_clock_enable(RCU_GPIOC);
     rcu_periph_clock_enable(RCU_AF);
 
-    /* PCA8  = LED3 */
+    /* PA8  = LED3 */
     gpio_init(GPIOA, GPIO_MODE_OUT_PP, GPIO_OSPEED_2MHZ,  GPIO_PIN_8);
-    /* PCA15 = LED4 */
+    gpio_bit_reset(GPIOA, GPIO_PIN_8);
+    /* PA15 = LED4 */
     gpio_init(GPIOA, GPIO_MODE_OUT_PP, GPIO_OSPEED_2MHZ,  GPIO_PIN_15);
+    gpio_bit_reset(GPIOA, GPIO_PIN_15);
     gpio_pin_remap_config(GPIO_SWJ_SWDPENABLE_REMAP, ENABLE);
     /* PC13  = LED */
     gpio_init(GPIOC, GPIO_MODE_OUT_PP,   GPIO_OSPEED_2MHZ,  GPIO_PIN_13);
+    gpio_bit_set(GPIOC, GPIO_PIN_13);
 }
 
 void gpio_set_all_analog(void)
@@ -117,11 +120,11 @@ int main(void)
     while(1){
         gpio_bit_set(GPIOA, GPIO_PIN_8);
         gpio_bit_set(GPIOA, GPIO_PIN_15);
-        gpio_bit_set(GPIOC, GPIO_PIN_13);
+        gpio_bit_reset(GPIOC, GPIO_PIN_13);
         Delay(500);
         gpio_bit_reset(GPIOA, GPIO_PIN_8);
         gpio_bit_reset(GPIOA, GPIO_PIN_15);
-        gpio_bit_reset(GPIOC, GPIO_PIN_13);
+        gpio_bit_set(GPIOC, GPIO_PIN_13);
         Delay(500);
     }
 }
