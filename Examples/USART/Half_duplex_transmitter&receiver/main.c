@@ -56,7 +56,15 @@ __IO uint16_t rxcount2 = 0;
 ErrStatus state1 = ERROR;
 ErrStatus state2 = ERROR;
 
-ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint16_t length);
+ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint16_t length)
+{
+    while(length--){
+        if(*src++ != *dst++){
+            return ERROR;
+        }
+    }
+    return SUCCESS;
+}
 
 /*!
     \brief      main function
@@ -155,24 +163,6 @@ int main(void)
 
     while(1){
     }
-}
-
-/*!
-    \brief      memory compare function
-    \param[in]  src: source data
-    \param[in]  dst: destination data
-    \param[in]  length: the compare data length
-    \param[out] none
-    \retval     ErrStatus: ERROR or SUCCESS
-*/
-ErrStatus memory_compare(uint8_t* src, uint8_t* dst, uint16_t length)
-{
-    while(length--){
-        if(*src++ != *dst++){
-            return ERROR;
-        }
-    }
-    return SUCCESS;
 }
 
 /* retarget the C library printf function to the USART */
