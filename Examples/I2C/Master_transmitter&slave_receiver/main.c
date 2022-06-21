@@ -66,11 +66,9 @@ void rcu_config(void)
 
 void gpio_config(void)
 {
-    /* connect PB8 to I2C0_SCL */
-    /* connect PB9 to I2C0_SDA */
-    gpio_init(GPIOB, GPIO_MODE_AF_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_8 | GPIO_PIN_9);
-    /* remap I2C0 to PB8 and PB9 */
-    gpio_pin_remap_config(GPIO_I2C0_REMAP, ENABLE);
+    /* connect PB6 to I2C0_SCL */
+    /* connect PB7 to I2C0_SDA */
+    gpio_init(GPIOB, GPIO_MODE_AF_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_6 | GPIO_PIN_7);
     /* connect PB10 to I2C1_SCL */
     /* connect PB11 to I2C1_SDA */
     gpio_init(GPIOB, GPIO_MODE_AF_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_10 | GPIO_PIN_11);
