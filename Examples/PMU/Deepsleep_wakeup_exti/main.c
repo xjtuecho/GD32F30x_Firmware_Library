@@ -112,7 +112,7 @@ int main(void)
 {
     systick_config();
     gpio_config();
-	exti_config();
+    exti_config();
     rcu_periph_clock_enable(RCU_PMU);
     while(1){
         if(RESET == gpio_input_bit_get(GPIOA, GPIO_PIN_0))
