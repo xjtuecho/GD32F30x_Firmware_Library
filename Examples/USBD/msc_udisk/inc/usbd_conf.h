@@ -51,9 +51,14 @@ OF SUCH DAMAGE.
 
 #define USBD_MSC_INTERFACE                0U
 
-#define PAGE_SIZE                         ((uint32_t)(2048U))
-#define NAND_FLASH_BASE_ADDRESS           ((uint32_t)(0x08000000U + 0x04000U))
-#define NAND_FLASH_END_ADDRESS            ((uint32_t)(0x08000000U + 0x20000U))
+#define NAND_FLASH_BASE_ADDRESS           0x08004000
+#if defined(FLASH_BANK1)
+#define PAGE_SIZE                         4096
+#define NAND_FLASH_END_ADDRESS            0x08100000
+#else
+#define PAGE_SIZE                         2048
+#define NAND_FLASH_END_ADDRESS            0x08020000
+#endif
 
 #define MSC_IN_EP                         EP_IN(1U)
 #define MSC_OUT_EP                        EP_OUT(2U)

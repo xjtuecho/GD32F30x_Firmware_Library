@@ -94,7 +94,12 @@ uint32_t flash_write_multi_blocks (uint8_t *pbuf,
 
     for(; page > 0U; page--){
         fmc_page_erase(start_page);
-
+	#if defined(FLASH_BANK1)
+		if(start_page < 0x08080000)
+		{
+			fmc_page_erase(start_page + 0x800);
+		}
+	#endif
         i = 0U;
 
         do{
